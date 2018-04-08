@@ -14,20 +14,24 @@ function buildUserUpdate(
   completedChallenge,
   timezone
 ) {
-  const updateData = { $set: {} };
   let finalChallenge;
+  let numOfAttempts = 1;
+  const updateData = { $set: {} };
   const { timezone: userTimezone, challengeMap = {} } = user;
 
   const oldChallenge = challengeMap[challengeId];
   const alreadyCompleted = !!oldChallenge;
 
-
   if (alreadyCompleted) {
     // add data from old challenge
+    if (oldChallenge.numOfAttempts) {
+      numOfAttempts = oldChallenge.numOfAttempts + 1;
+    }
     finalChallenge = {
       ...completedChallenge,
       completedDate: oldChallenge.completedDate,
-      lastUpdated: completedChallenge.completedDate
+      lastUpdated: completedChallenge.completedDate,
+      numOfAttempts
     };
   } else {
     updateData.$push = {
@@ -36,7 +40,10 @@ function buildUserUpdate(
         completedChallenge: challengeId
       }
     };
-    finalChallenge = completedChallenge;
+    finalChallenge = {
+      ...completedChallenge,
+      numOfAttempts
+    };
   }
 
   updateData.$set = {
@@ -254,10 +261,10 @@ export default function(app) {
         !completedChallenge.githubLink
       )
     ) {
-      req.flash('errors', {
-        msg: 'You haven\'t supplied the necessary URLs for us to inspect ' +
-          'your work.'
-      });
+      req.flash(
+        'danger',
+        'You haven\'t supplied the necessary URLs for us to inspect your work.'
+      );
       return res.sendStatus(403);
     }
 
@@ -345,7 +352,7 @@ export default function(app) {
         if (!dashedName || !block) {
           // this should normally not be hit if database is properly seeded
           throw new Error(dedent`
-            Attemped to find '${dashedName}'
+            Attempted to find '${dashedName}'
             from '${ challengeId || 'no challenge id found'}'
             but came up empty.
             db may not be properly seeded.

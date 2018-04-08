@@ -16,7 +16,17 @@
         }
       }
     },
+    "newEmail": {
+      "type": "string"
+    },
     "emailVerifyTTL": {
+      "type": "date"
+    },
+    "emailVerified": {
+      "type": "boolean",
+      "default": false
+    },
+    "emailAuthLinkTTL": {
       "type": "date"
     },
     "password": {
@@ -52,6 +62,15 @@
     "joinedGithubOn": {
       "type": "date"
     },
+    "website": {
+      "type": "string"
+    },
+    "githubProfile": {
+      "type": "string"
+    },
+    "_csrf": {
+      "type": "string"
+    },
     "isMigrationGrandfathered": {
       "type": "boolean",
       "default": false
@@ -67,6 +86,10 @@
       "require": true
     },
     "bio": {
+      "type": "string",
+      "default": ""
+    },
+    "about": {
       "type": "string",
       "default": ""
     },
@@ -120,11 +143,6 @@
       "description": "Campers profile does not show challenges/certificates to the public",
       "default": false
     },
-    "isAvailableForHire": {
-      "type": "boolean",
-      "description": "Camper is available for hire",
-      "default": false
-    },
     "currentChallengeId": {
       "type": "string",
       "description": "The challenge last visited by the user",
@@ -164,6 +182,36 @@
       "description": "Campers is full stack certified",
       "default": false
     },
+    "isRespWebDesignCert": {
+      "type": "boolean",
+      "description": "Camper is responsive web design certified",
+      "default": false
+    },
+    "is2018DataVisCert": {
+      "type": "boolean",
+      "description": "Camper is data visualization certified (2018)",
+      "default": false
+    },
+    "isFrontEndLibsCert": {
+      "type": "boolean",
+      "description": "Camper is front end libraries certified",
+      "default": false
+    },
+    "isJsAlgoDataStructCert": {
+      "type": "boolean",
+      "description": "Camper is javascript algorithms and data structures certified",
+      "default": false
+    },
+    "isApisMicroservicesCert": {
+      "type": "boolean",
+      "description": "Camper is apis and microservices certified",
+      "default": false
+    },
+    "isInfosecQaCert": {
+      "type": "boolean",
+      "description": "Camper is information security and quality assurance certified",
+      "default": false
+    },
     "isChallengeMapMigrated": {
       "type": "boolean",
       "description": "Migrate completedChallenges array to challenge map",
@@ -179,6 +227,7 @@
         {
           "completedDate": "number",
           "lastUpdated": "number",
+          "numOfAttempts": "number",
           "id": "string",
           "name": "string",
           "completedWith": "string",
@@ -191,6 +240,10 @@
           }
         }
       ],
+      "default": []
+    },
+    "portfolio": {
+      "type": "array",
       "default": []
     },
     "rand": {
@@ -238,6 +291,14 @@
       "type": "hasOne",
       "model": "pledge",
       "foreignKey": ""
+    },
+    "authTokens": {
+      "type": "hasMany",
+      "model": "AuthToken",
+      "foreignKey": "userId",
+      "options": {
+        "disableInclude": true
+      }
     }
   },
   "acls": [
@@ -246,6 +307,32 @@
       "principalType": "ROLE",
       "principalId": "$everyone",
       "permission": "DENY"
+    },
+    {
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "DENY",
+      "property": "create"
+    },
+    {
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "DENY",
+      "property": "login"
+    },
+    {
+      "accessType": "EXECUTE",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "DENY",
+      "property": "verify"
+    },
+    {
+      "accessType": "EXECUTE",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "DENY",
+      "property": "resetPassword"
     },
     {
       "accessType": "EXECUTE",
@@ -266,14 +353,14 @@
       "principalType": "ROLE",
       "principalId": "$everyone",
       "permission": "ALLOW",
-      "property": "giveBrowniePoints"
+      "property": "getPublicProfile"
     },
     {
       "accessType": "EXECUTE",
       "principalType": "ROLE",
-      "principalId": "$owner",
+      "principalId": "$everyone",
       "permission": "ALLOW",
-      "property": "updateEmail"
+      "property": "giveBrowniePoints"
     },
     {
       "accessType": "EXECUTE",
@@ -288,6 +375,13 @@
       "principalId": "$owner",
       "permission": "ALLOW",
       "property": "updateLanguage"
+    },
+    {
+      "accessType": "EXECUTE",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW",
+      "property": "getMessages"
     }
   ],
   "methods": {}

@@ -5,34 +5,6 @@
   "helpRoom": "HelpBackend",
   "challenges": [
     {
-      "id": "57ed709d334ad35e8fe79acb",
-      "title": "New Backend Format",
-      "isBeta": "true",
-      "meta": "This is just a test",
-      "description": [
-        "This is just a test of the new backend challenge test framework"
-      ],
-      "tests": [
-        {
-          "text": "website should return 200",
-          "testString": "getUserInput => $.ajax({ url: getUserInput('url'), method: 'HEAD' }).then(null, (err) => assert.fail(err));"
-        },
-        {
-          "text": "package.json should have a valid \"keywords\" key",
-          "testString": "getUserInput => ($.get(getUserInput('url') + '/_api/package.json').then(function(data){ var packJson = JSON.parse(data); assert(packJson.keywords); }, err => { throw new Error('Err: ' + err.statusText);}))"
-        },
-        {
-          "text": "\"keywords\" field should be an Array",
-          "testString": "getUserInput => ($.get(getUserInput('url') + '/_api/package.json').then(function(data){ var packJson = JSON.parse(data); assert.isArray(packJson.keywords); }, err => { throw new Error('Err: ' + err.statusText);}))"
-        },
-        {
-          "text": "\"keywords\" should include \"freecodecamp\"",
-          "testString": "getUserInput => ($.get(getUserInput('url') + '/_api/package.json').then(function(data){ var packJson = JSON.parse(data); assert.include(packJson.keywords, 'freecodecamp'); }, err => { throw new Error('Err: ' + err.statusText); }))"
-        }
-      ],
-      "type": "backend"
-    },
-    {
       "id": "bd7158d8c443edefaeb5bdef",
       "title": "Timestamp Microservice",
       "description": [
@@ -57,13 +29,12 @@
       ],
       "solutions": [],
       "hints": [],
-      "type": "backend",
+      "challengeType": 2,
       "isRequired": true,
       "releasedOn": "January 1, 2016",
       "translations": {
         "es": {
-          "title": "Microservicio de Marca Temporal",
-          "description": []
+          "title": "Microservicio de Marca Temporal"
         }
       }
     },
@@ -84,13 +55,12 @@
       ],
       "solutions": [],
       "hints": [],
-      "type": "backend",
+      "challengeType": 2,
       "isRequired": true,
       "releasedOn": "January 1, 2016",
       "translations": {
         "es": {
-          "title": "Microservicio para analizar el encabezado de una petición",
-          "description": []
+          "title": "Microservicio para analizar el encabezado de una petición"
         }
       }
     },
@@ -119,18 +89,17 @@
       ],
       "solutions": [],
       "hints": [],
-      "type": "backend",
+      "challengeType": 2,
       "isRequired": true,
       "releasedOn": "January 1, 2016",
       "translations": {
         "es": {
-          "title": "Microservicio para acortar URLs",
-          "description": []
+          "title": "Microservicio para acortar URLs"
         }
       }
     },
     {
-      "id": "bd7158d8c443edefaeb5bdee",
+      "id": "5a8b073d06fa14fcfde687aa",
       "title": "Exercise Tracker",
       "description": [
         "Build a full stack JavaScript app that is functionally similar to this: <a href='https://fuschia-custard.glitch.me/' target='_blank'>https://fuschia-custard.glitch.me/</a>.",
@@ -148,11 +117,11 @@
           "testString": ""
         },
         {
-          "text": "I can add an exercise to any user by posting form data userId(_id), description, duration, and optionally date to /api/exercise/add. If no date supplied it will use current date. Returned will the the user object with also with the exercise fields added.",
+          "text": "I can add an exercise to any user by posting form data userId(_id), description, duration, and optionally date to /api/exercise/add. If no date supplied it will use current date. App will return the user object with the exercise fields added.",
           "testString": ""
         },
         {
-          "text": "I can retrieve a full exercise log of any user by getting /api/exercise/log with a parameter of userId(_id). Return will be the user object with added array log and count (total exercise count).",
+          "text": "I can retrieve a full exercise log of any user by getting /api/exercise/log with a parameter of userId(_id). App will return the user object with added array log and count (total exercise count).",
           "testString": ""
         },
         {
@@ -162,13 +131,12 @@
       ],
       "solutions": [],
       "hints": [],
-      "type": "backend",
+      "challengeType": 2,
       "isRequired": true,
       "releasedOn": "February 17, 2017",
       "translations": {
         "es": {
-          "title": "Capa de abstracción para buscar imágenes",
-          "description": []
+          "title": "Capa de abstracción para buscar imágenes"
         }
       }
     },
@@ -193,13 +161,12 @@
       ],
       "solutions": [],
       "hints": [],
-      "type": "backend",
+      "challengeType": 2,
       "isRequired": true,
       "releasedOn": "January 1, 2016",
       "translations": {
         "es": {
-          "title": "Microservicio de metadatos de archivos",
-          "description": []
+          "title": "Microservicio de metadatos de archivos"
         }
       }
     }

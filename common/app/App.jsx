@@ -1,29 +1,36 @@
-import React, { PropTypes } from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
 import ns from './ns.json';
 import {
   appMounted,
   fetchUser,
-  updateAppLang,
 
-  userSelector
+  isSignedInSelector
 } from './redux';
 
+import Flash from './Flash';
 import Nav from './Nav';
 import Toasts from './Toasts';
+import NotFound from './NotFound';
+import { mainRouteSelector } from './routes/redux';
+import Challenges from './routes/Challenges';
+import Profile from './routes/Profile';
+import Settings from './routes/Settings';
 
 const mapDispatchToProps = {
   appMounted,
-  fetchUser,
-  updateAppLang
+  fetchUser
 };
 
 const mapStateToProps = state => {
-  const { username } = userSelector(state);
+  const isSignedIn = isSignedInSelector(state);
+  const route = mainRouteSelector(state);
   return {
     toast: state.app.toast,
-    isSignedIn: !!username
+    isSignedIn,
+    route
   };
 };
 
@@ -32,19 +39,18 @@ const propTypes = {
   children: PropTypes.node,
   fetchUser: PropTypes.func,
   isSignedIn: PropTypes.bool,
-  params: PropTypes.object,
-  toast: PropTypes.object,
-  updateAppLang: PropTypes.func.isRequired
+  route: PropTypes.string,
+  toast: PropTypes.object
+};
+
+const routes = {
+  challenges: Challenges,
+  profile: Profile,
+  settings: Settings
 };
 
 // export plain class for testing
 export class FreeCodeCamp extends React.Component {
-  componentWillReceiveProps(nextProps) {
-    if (this.props.params.lang !== nextProps.params.lang) {
-      this.props.updateAppLang(nextProps.params.lang);
-    }
-  }
-
   componentDidMount() {
     this.props.appMounted();
     if (!this.props.isSignedIn) {
@@ -53,14 +59,15 @@ export class FreeCodeCamp extends React.Component {
   }
 
   render() {
-    // we render nav after the content
-    // to allow the panes to update
-    // redux store, which will update the bin
-    // buttons in the nav
+    const {
+      route
+    } = this.props;
+    const Child = routes[route] || NotFound;
     return (
       <div className={ `${ns}-container` }>
-        { this.props.children }
+        <Flash />
         <Nav />
+        <Child />
         <Toasts />
       </div>
     );

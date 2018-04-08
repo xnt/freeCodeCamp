@@ -1,10 +1,16 @@
 import { Observable } from 'rx';
 import MouseTrap from 'mousetrap';
-import { push } from 'react-router-redux';
+import { push } from 'redux-first-router';
 import {
   toggleNightMode,
   hardGoTo
 } from '../../common/app/redux';
+import {
+  aboutUrl,
+  donateUrl,
+  forumUrl,
+  githubUrl
+} from '../../common/utils/constantStrings.json';
 
 function bindKey(key, actionCreator) {
   return Observable.fromEventPattern(
@@ -16,7 +22,6 @@ function bindKey(key, actionCreator) {
 
 const softRedirects = {
   'g n n': '/challenges/next-challenge',
-  'g n a': '/about',
   'g n m': '/map',
   'g n o': '/settings'
 };
@@ -26,16 +31,20 @@ export default function mouseTrapSaga(actions) {
     ...Object.keys(softRedirects)
       .map(key => bindKey(key, () => push(softRedirects[key]))),
     bindKey(
+      'g n a',
+      () => hardGoTo(aboutUrl)
+    ),
+    bindKey(
       'g n r',
-      () => hardGoTo('https://github.com/freecodecamp/freecodecamp')
+      () => hardGoTo(githubUrl)
     ),
     bindKey(
       'g n d',
-      () => hardGoTo('https://www.freecodecamp.com/donate')
+      () => hardGoTo(donateUrl)
     ),
     bindKey(
       'g n w',
-      () => hardGoTo('http://forum.freecodecamp.com')
+      () => hardGoTo(forumUrl)
     ),
     bindKey('g t n', toggleNightMode)
   ];

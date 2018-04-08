@@ -2,7 +2,6 @@
 
 [![Throughput Graph](https://graphs.waffle.io/freecodecamp/freecodecamp/throughput.svg)](https://waffle.io/freecodecamp/freecodecamp/metrics)
 
-[![Join the chat at https://gitter.im/freecodecamp/freecodecamp](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/freecodecamp/freecodecamp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Known Vulnerabilities](https://snyk.io/test/github/freecodecamp/freecodecamp/badge.svg)](https://snyk.io/test/github/freecodecamp/freecodecamp)
 [![Build Status](https://travis-ci.org/freeCodeCamp/freeCodeCamp.svg?branch=staging)](https://travis-ci.org/freeCodeCamp/freeCodeCamp)
 [![Pull Requests Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)
@@ -45,17 +44,17 @@ For this certification, you'll work on **two projects from scratch** and then **
 
 ---
 
-This code is running live at [freeCodeCamp.com](https://www.freecodecamp.com). We also have [Gitter chat rooms](https://gitter.im/FreeCodeCamp/FreeCodeCamp), a [Medium publication](https://medium.freecodecamp.com), an [interactive forum](https://forum.freecodecamp.com), a [wiki knowledgebase](https://forum.freecodecamp.com/c/wiki), and even a [YouTube channel](https://youtube.com/freecodecamp).
+This code is running live at [freeCodeCamp.org](https://www.freecodecamp.org). We also have a super active [forum](https://forum.freecodecamp.org), [local study groups](https://study-group-directory.freecodecamp.org/), a [Medium publication](https://medium.freecodecamp.org), a [guide to thousands of programming topics](https://guide.freecodecamp.org), and even a [YouTube channel](https://youtube.com/freecodecamp).
 
-### [Join our community here](https://www.freecodecamp.com/signin).
+### [Join our community here](https://www.freecodecamp.org/signin).
 
 Found a bug?
 ------------
 
 Do not file an issue until you have followed these steps:
 
-1. Read the [Help I've Found a Bug](http://forum.freecodecamp.com/t/how-to-report-a-bug/19543) article and follow its instructions.
-2. Ask for confirmation in the appropriate [Help Room](http://forum.freecodecamp.com/t/free-code-camp-official-chat-rooms/19390/2).
+1. Read the [Help I've Found a Bug](https://forum.freecodecamp.org/t/how-to-report-a-bug/19543) article and follow its instructions.
+2. Ask for confirmation in the appropriate [Help Room](https://forum.freecodecamp.org/t/free-code-camp-official-chat-rooms/19390/2).
 3. Please *do not* open an issue without a 3rd party confirmation of your problem.
 
 Contributing
@@ -66,8 +65,8 @@ We welcome pull requests from freeCodeCamp campers (our students) and seasoned J
 License
 -------
 
-Copyright (c) 2017 freeCodeCamp.
+Copyright (c) 2018 freeCodeCamp.
 
 The content of this repository bound by the following LICENSE(S)
 - The computer software is licensed under the [BSD-3-Clause](./LICENSE.md).
-- The curricular content as in the `./seed/challenges` or subdirectories and our wiki are licensed under the [CC-BY-SA-4.0](./LICENSE-freeCodeCamp-Curriculum.md)
+- The curricular content in the [`/seed`](/seed) and subdirectories are licensed under the [CC-BY-SA-4.0](./seed/LICENSE.md)

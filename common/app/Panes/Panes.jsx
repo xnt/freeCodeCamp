@@ -1,11 +1,12 @@
-import React, { PureComponent, PropTypes } from 'react';
+import React, { PureComponent } from 'react';
+import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
 
 import {
   panesSelector,
   panesByNameSelector,
-  heightSelector,
+  panesMounted,
   widthSelector
 } from './redux';
 import Pane from './Pane.jsx';
@@ -14,13 +15,12 @@ import Divider from './Divider.jsx';
 const mapStateToProps = createSelector(
   panesSelector,
   panesByNameSelector,
-  heightSelector,
   widthSelector,
-  (panes, panesByName, height) => {
+  (panes, panesByName) => {
     let lastDividerPosition = 0;
     return {
       panes: panes
-        .map(name => panesByName[name])
+        .map(({ name }) => panesByName[name])
         .filter(({ isHidden })=> !isHidden)
         .map((pane, index, { length: numOfPanes }) => {
           const dividerLeft = pane.dividerLeft || 0;
@@ -31,29 +31,29 @@ const mapStateToProps = createSelector(
             left: index === 0 ? 0 : left,
             right: index + 1 === numOfPanes ? 0 : 100 - dividerLeft
           };
-        }, {}),
-      height
+        }, {})
     };
   }
 );
 
-const mapDispatchToProps = null;
+const mapDispatchToProps = { panesMounted };
 
 const propTypes = {
-  height: PropTypes.number.isRequired,
-  nameToComponent: PropTypes.object.isRequired,
-  panes: PropTypes.array
+  panes: PropTypes.array,
+  panesMounted: PropTypes.func.isRequired,
+  render: PropTypes.func.isRequired
 };
 
 export class Panes extends PureComponent {
+  componentDidMount() {
+    this.props.panesMounted();
+  }
   renderPanes() {
     const {
-      nameToComponent,
+      render,
       panes
     } = this.props;
     return panes.map(({ name, left, right, dividerLeft }) => {
-      const { Component } = nameToComponent[name] || {};
-      const FinalComponent = Component ? Component : 'span';
       const divider = dividerLeft ?
         (
           <Divider
@@ -70,7 +70,7 @@ export class Panes extends PureComponent {
           left={ left }
           right={ right }
           >
-          <FinalComponent />
+          { render(name) }
         </Pane>,
         divider
       ];
@@ -79,9 +79,8 @@ export class Panes extends PureComponent {
   }
 
   render() {
-    const { height } = this.props;
     const outerStyle = {
-      height,
+      height: '100%',
       position: 'relative',
       width: '100%'
     };

@@ -1,8 +1,11 @@
 extends ../layout
 block content
     .text-center
-        h2 Sign in with one of these options if you used them as your original login methods :
+        h2 If you original signed up using one of these methods, you can sign in and add your email address to your account:
         br
+        a.btn.btn-lg.btn-block.btn-social.btn-github(href='/auth/github')
+            i.fa.fa-github
+            | Sign in with GitHub
         a.btn.btn-lg.btn-block.btn-social.btn-facebook(href='/auth/facebook')
             i.fa.fa-facebook
             | Sign in with Facebook
@@ -15,7 +18,10 @@ block content
         a.btn.btn-lg.btn-block.btn-social.btn-twitter(href='/auth/twitter')
             i.fa.fa-twitter
             | Sign in with Twitter
-          
+        br
+        p
+          a(href="/signin") Or click here to go back.
+
     script.
       $(document).ready(function() {
         var method = localStorage.getItem('lastSigninMethodDeprecated'),

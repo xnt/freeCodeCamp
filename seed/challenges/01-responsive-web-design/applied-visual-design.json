@@ -29,7 +29,10 @@
       "description": [
         "This section of the curriculum focuses on Applied Visual Design. The first group of challenges build on the given card layout to show a number of core principles.",
         "Text is often a large part of web content. CSS has several options for how to align it with the <code>text-align</code> property.",
-        "The <code>justify</code> property causes all lines of text except the last line to meet the left and right edges of the line box.",
+        "<code>text-align: justify;</code> causes all lines of text except the last line to meet the left and right edges of the line box.",
+        "<code>text-align: center;</code> centers the text",
+        "<code>text-align: right;</code> right-aligns the text",
+        "And <code>text-align: left;</code> (the default) left-aligns the text.",
         "<hr>",
         "Align the <code>h4</code> tag's text, which says \"Google\", to the center. Then justify the paragraph tag which contains information about how Google was founded."
       ],
@@ -301,7 +304,7 @@
       ],
       "tests": [
         "assert($('u').length === 1, 'message: Your code should add a <code>u</code> tag to the markup.');",
-        "assert($('u').text().indexOf('Ph.D. students') > -1, 'message: The <code>u</code> tag should wrap around the text \"Ph.D. students\".');",
+        "assert($('u').text() === 'Ph.D. students', 'message: The <code>u</code> tag should wrap around the text \"Ph.D. students\".');",
         "assert($('u').children('div').length === 0, 'message: The <code>u</code> tag should not wrap around the parent <code>div</code> tag.');"
       ],
       "solutions": [],
@@ -1049,7 +1052,8 @@
       "id": "587d781e367417b2b2512aca",
       "title": "Move a Relatively Positioned Element with CSS Offsets",
       "description": [
-        "The CSS offsets of <code>top</code> or <code>bottom</code>, and <code>left</code> or <code>right</code> tell the browser how far to offset an item relative to where it would sit in the normal flow of the document. This can be slightly confusing, because you're offsetting an element away from a given spot, which effectively moves it towards the opposite direction. As you saw in the last challenge, using the top offset moved the h2 downwards. Likewise, using a left offset effectively moves an item to the right.",
+        "The CSS offsets of <code>top</code> or <code>bottom</code>, and <code>left</code> or <code>right</code> tell the browser how far to offset an item relative to where it would sit in the normal flow of the document. You're offsetting an element away from a given spot, which moves the element away from the referenced side (effectively, the opposite direction). As you saw in the last challenge, using the top offset moved the <code>h2</code> downwards. Likewise, using a left offset moves an item to the right.",
+        "<img src='https://i.imgur.com/eWWi3gZ.gif' alt='' />",
         "<hr>",
         "Use CSS offsets to move the <code>h2</code> 15 pixels to the right and 10 pixels up."
       ],
@@ -1087,7 +1091,7 @@
         "The next option for the CSS <code>position</code> property is <code>absolute</code>, which locks the element in place relative to its parent container. Unlike the <code>relative</code> position, this removes the element from the normal flow of the document, so surrounding items ignore it. The CSS offset properties (top or bottom and left or right) are used to adjust the position.",
         "One nuance with absolute positioning is that it will be locked relative to its closest <em>positioned</em> ancestor. If you forget to add a position rule to the parent item, (this is typically done using <code>position: relative;</code>), the browser will keep looking up the chain and ultimately default to the body tag.",
         "<hr>",
-        "Lock the <code>#searchbar</code> element to the top-right of its <code>section</code> parent by declaring its <code>position</code> as <code>absolute</code>. Give it <code>top</code> and <code>right</code> offsets of 0 pixels each."
+        "Lock the <code>#searchbar</code> element to the top-right of its <code>section</code> parent by declaring its <code>position</code> as <code>absolute</code>. Give it <code>top</code> and <code>right</code> offsets of 50 pixels each."
       ],
       "challengeSeed": [
         "<style>",
@@ -1113,8 +1117,8 @@
       ],
       "tests": [
         "assert($('#searchbar').css('position') == 'absolute', 'message: The <code>#searchbar</code> element should have a <code>position</code> set to <code>absolute</code>.');",
-        "assert($('#searchbar').css('top') == '0px', 'message: Your code should use the <code>top</code> CSS offset of 0 pixels on the <code>#searchbar</code> element.');",
-        "assert($('#searchbar').css('right') == '0px', 'message: Your code should use the <code>right</code> CSS offset of 0 pixels on the <code>#searchbar</code> element.');"
+        "assert($('#searchbar').css('top') == '50px', 'message: Your code should use the <code>top</code> CSS offset of 50 pixels on the <code>#searchbar</code> element.');",
+        "assert($('#searchbar').css('right') == '50px', 'message: Your code should use the <code>right</code> CSS offset of 50 pixels on the <code>#searchbar</code> element.');"
       ],
       "solutions": [],
       "hints": [],
@@ -1387,9 +1391,9 @@
         "<div class=\"raspberry\"></div>"
       ],
       "tests": [
-        "assert(code.match(/.orange\\s*\\{\\s*background-color:\\s*(#FF7D00|#ff7d00);?\\s*\\}/g), 'message: The <code>div</code> element with class <code>orange</code> should have a <code>background-color</code> of orange.');",
-        "assert(code.match(/.cyan\\s*\\{\\s*background-color:\\s*(#00FFFF|#00ffff);?\\s*\\}/g), 'message: The <code>div</code> element with class <code>cyan</code> should have a <code>background-color</code> of cyan.');",
-        "assert(code.match(/.raspberry\\s*\\{\\s*background-color:\\s*(#FF007D|#ff007d);?\\s*\\}/g), 'message: The <code>div</code> element with class <code>raspberry</code> should have a <code>background-color</code> of raspberry.');"
+        "assert($('.orange').css('background-color') == 'rgb(255, 125, 0)', 'message: The <code>div</code> element with class <code>orange</code> should have a <code>background-color</code> of orange.');",
+        "assert($('.cyan').css('background-color') == 'rgb(0, 255, 255)', 'message: The <code>div</code> element with class <code>cyan</code> should have a <code>background-color</code> of cyan.');",
+        "assert($('.raspberry').css('background-color') == 'rgb(255, 0, 125)', 'message: The <code>div</code> element with class <code>raspberry</code> should have a <code>background-color</code> of raspberry.');"
       ],
       "solutions": [],
       "hints": [],
@@ -2078,7 +2082,9 @@
         "  button:hover {",
         "    animation-name: background-color;",
         "    animation-duration: 500ms;",
+        "    /* add your code below this line */",
         "    ",
+        "    /* add your code above this line */",
         "  }",
         "  @keyframes background-color {",
         "    100% {",
@@ -2089,7 +2095,7 @@
         "<button>Register</button>"
       ],
       "tests": [
-        "assert(code.match(/button:hover\\s*?{\\s*?animation-name:\\s*?background-color;\\s*?animation-duration:\\s*?500ms;\\s*?animation-fill-mode:\\s*?forwards;\\s*?}/gi), 'message: <code>button:hover</code> should have a <code>animation-fill-mode</code> property with a value of <code>forwards</code>.');"
+        "assert(code.match(/button\\s*?:\\s*?hover\\s*?{[\\s\\S]*animation-fill-mode\\s*?:\\s*?forwards\\s*?;[\\s\\S]*}/gi) && code.match(/button\\s*?:\\s*?hover\\s*?{[\\s\\S]*animation-name\\s*?:\\s*?background-color\\s*?;[\\s\\S]*}/gi) && code.match(/button\\s*?:\\s*?hover\\s*?{[\\s\\S]*animation-duration\\s*?:\\s*?500ms\\s*?;[\\s\\S]*}/gi), 'message: <code>button:hover</code> should have a <code>animation-fill-mode</code> property with a value of <code>forwards</code>.');"
       ],
       "solutions": [],
       "hints": [],
@@ -2507,7 +2513,7 @@
       "title": "Change Animation Timing with Keywords",
       "description": [
         "In CSS animations, the <code>animation-timing-function</code> property controls how quickly an animated element changes over the duration of the animation. If the animation is a car moving from point A to point B in a given time (your <code>animation-duration</code>), the <code>animation-timing-function</code> says how the car accelerates and decelerates over the course of the drive.",
-        "There are a number of predefined keywords available for popular options. For example, the default value is <code>linear</code>, which applies a constant animation speed throughout. Other options include <code>ease-out</code>, which is quick in the beginning then slows down, or <code>ease-in</code>, which is slow in the beginning, then speeds up at the end.",
+        "There are a number of predefined keywords available for popular options. For example, the default value is <code>ease</code>, which starts slow, speeds up in the middle, and then slows down again in the end. Other options include <code>ease-out</code>, which is quick in the beginning then slows down, <code>ease-in</code>, which is slow in the beginning, then speeds up at the end, or <code>linear</code>, which applies a constant animation speed throughout.",
         "<hr>",
         "For the elements with id of <code>ball1</code> and <code>ball2</code>, add an <code>animation-timing-function</code> property to each, and set <code>#ball1</code> to <code>linear</code>, and <code>#ball2</code> to <code>ease-out</code>. Notice the difference between how the elements move during the animation but end together, since they share the same <code>animation-duration</code> of 2 seconds."
       ],

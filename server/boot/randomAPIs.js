@@ -20,8 +20,6 @@ module.exports = function(app) {
     '/the-fastest-web-page-on-the-internet',
     theFastestWebPageOnTheInternet
   );
-  noLangRouter.get('/shop/cancel-stickers', cancelStickers);
-  noLangRouter.get('/shop/confirm-stickers', confirmStickers);
 
   router.get('/unsubscribed', unsubscribed);
   router.get('/nonprofits', nonprofits);
@@ -30,7 +28,6 @@ module.exports = function(app) {
   router.get('/pmi-acp-agile-project-managers-form', agileProjectManagersForm);
   router.get('/coding-bootcamp-cost-calculator', bootcampCalculator);
   router.get('/stories', showTestimonials);
-  router.get('/shop', showShop);
   router.get('/all-stories', showAllTestimonials);
   router.get('/how-nonprofit-projects-work', howNonprofitProjectsWork);
   router.get(
@@ -88,28 +85,6 @@ module.exports = function(app) {
     });
   }
 
-  function showShop(req, res) {
-    res.render('resources/shop', {
-      title: 'Support freeCodeCamp by Buying t-shirts, ' +
-        'stickers, and other goodies'
-    });
-  }
-
-  function confirmStickers(req, res) {
-    req.flash('success', {
-      msg: 'Thank you for supporting our community! You should receive ' +
-        'your stickers in the mail soon!'
-    });
-    res.redirect('/shop');
-  }
-
-  function cancelStickers(req, res) {
-      req.flash('info', {
-        msg: 'You\'ve cancelled your purchase of our stickers. You can ' +
-          'support our community any time by buying some.'
-      });
-      res.redirect('/shop');
-  }
   function submitCatPhoto(req, res) {
     res.send('Submitted!');
   }
@@ -159,15 +134,17 @@ module.exports = function(app) {
     return User.updateAll(query, params, function(err, info) {
       if (err) { return next(err); }
       if (info.count === 0) {
-        req.flash('info', {
-          msg: 'Email address not found. ' +
-          'Please update your Email preferences from your profile.'
-        });
+        req.flash(
+          'info',
+          'Email address not found. ' +
+            'Please update your Email preferences from your profile.'
+        );
         return res.redirect('/map');
       } else {
-        req.flash('info', {
-          msg: 'We\'ve successfully updated your Email preferences.'
-        });
+        req.flash(
+          'info',
+          'We\'ve successfully updated your Email preferences.'
+        );
         return res.redirect('/unsubscribed');
       }
     });

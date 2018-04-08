@@ -1,35 +1,35 @@
-import React, { PropTypes } from 'react';
+import React, { PureComponent } from 'react';
+import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
 import FA from 'react-fontawesome';
-import PureComponent from 'react-pure-render/component';
 import { Panel } from 'react-bootstrap';
 
 import ns from './ns.json';
-import Challenge from './Challenge.jsx';
+import Challenges from './Challenges.jsx';
 import {
   toggleThisPanel,
-
-  makePanelOpenSelector,
-  makePanelHiddenSelector
+  makePanelOpenSelector
 } from './redux';
+import { fetchNewBlock } from '../redux';
 
 import { makeBlockSelector } from '../entities';
 
-const dispatchActions = { toggleThisPanel };
+const mapDispatchToProps = {
+  fetchNewBlock,
+  toggleThisPanel
+};
 function makeMapStateToProps(_, { dashedName }) {
   return createSelector(
     makeBlockSelector(dashedName),
     makePanelOpenSelector(dashedName),
-    makePanelHiddenSelector(dashedName),
-    (block, isOpen, isHidden) => {
+    (block, isOpen) => {
       return {
         isOpen,
-        isHidden,
         dashedName,
         title: block.title,
         time: block.time,
-        challenges: block.challenges
+        challenges: block.challenges || []
       };
     }
   );
@@ -37,7 +37,7 @@ function makeMapStateToProps(_, { dashedName }) {
 const propTypes = {
   challenges: PropTypes.array,
   dashedName: PropTypes.string,
-  isHidden: PropTypes.bool,
+  fetchNewBlock: PropTypes.func.isRequired,
   isOpen: PropTypes.bool,
   time: PropTypes.string,
   title: PropTypes.string,
@@ -65,21 +65,11 @@ export class Block extends PureComponent {
         <span>
         { title }
         </span>
-        <span className={ `${ns}-block-time` }>({ time })</span>
+        {
+          time && <span className={ `${ns}-block-time` }>({ time })</span>
+        }
       </div>
     );
-  }
-
-  renderChallenges(challenges) {
-    if (!Array.isArray(challenges) || !challenges.length) {
-      return <div>No Challenges Found</div>;
-    }
-    return challenges.map(dashedName => (
-      <Challenge
-        dashedName={ dashedName }
-        key={ dashedName }
-      />
-    ));
   }
 
   render() {
@@ -88,12 +78,9 @@ export class Block extends PureComponent {
       time,
       dashedName,
       isOpen,
-      isHidden,
-      challenges
+      challenges,
+      fetchNewBlock
     } = this.props;
-    if (isHidden) {
-      return null;
-    }
     return (
       <Panel
         bsClass={ `${ns}-accordion-panel` }
@@ -103,9 +90,10 @@ export class Block extends PureComponent {
         header={ this.renderHeader(isOpen, title, time) }
         id={ title }
         key={ title }
+        onClick={ () => fetchNewBlock(dashedName) }
         onSelect={ this.handleSelect }
         >
-        { this.renderChallenges(challenges) }
+        { isOpen && <Challenges challenges={ challenges } /> }
       </Panel>
     );
   }
@@ -114,4 +102,4 @@ export class Block extends PureComponent {
 Block.displayName = 'Block';
 Block.propTypes = propTypes;
 
-export default connect(makeMapStateToProps, dispatchActions)(Block);
+export default connect(makeMapStateToProps, mapDispatchToProps)(Block);

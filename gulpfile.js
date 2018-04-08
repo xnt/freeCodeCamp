@@ -1,5 +1,4 @@
 // enable debug for gulp
-/* eslint-disable prefer-object-spread/prefer-object-spread */
 process.env.DEBUG = process.env.DEBUG || 'fcc:*';
 require('dotenv').load();
 
@@ -20,9 +19,7 @@ const Rx = require('rx'),
   concat = require('gulp-concat'),
   uglify = require('gulp-uglify'),
   merge = require('merge-stream'),
-  babel = require('gulp-babel'),
   sourcemaps = require('gulp-sourcemaps'),
-  gulpif = require('gulp-if'),
 
   // react app
   webpack = require('webpack'),
@@ -30,6 +27,7 @@ const Rx = require('rx'),
   webpackDevMiddleware = require('webpack-dev-middleware'),
   webpackHotMiddleware = require('webpack-hot-middleware'),
   webpackConfig = require('./webpack.config.js'),
+  webpackFrameConfig = require('./webpack.frame-runner.js'),
 
   // server process
   nodemon = require('gulp-nodemon'),
@@ -40,15 +38,7 @@ const Rx = require('rx'),
 
   // rev
   rev = require('gulp-rev'),
-  revDel = require('rev-del'),
-
-  // lint
-  jsonlint = require('gulp-jsonlint'),
-  eslint = require('gulp-eslint'),
-
-  // unit-tests
-  tape = require('gulp-tape'),
-  tapSpec = require('tap-spec');
+  revDel = require('rev-del');
 
 Rx.config.longStackSupport = true;
 const sync = browserSync.create('fcc-sync-server');
@@ -108,6 +98,7 @@ const paths = {
     resolve('codemirror', 'lib/codemirror.js', 'addon/lint/lint.js'),
     resolve('codemirror', 'lib/codemirror.js', 'addon/lint/javascript-lint.js'),
     resolve('codemirror', 'lib/codemirror.js', 'mode/javascript/javascript.js'),
+    resolve('codemirror', 'lib/codemirror.js', 'mode/jsx/jsx.js'),
     resolve('codemirror', 'lib/codemirror.js', 'mode/xml/xml.js'),
     resolve('codemirror', 'lib/codemirror.js', 'mode/css/css.js'),
     resolve('codemirror', 'lib/codemirror.js', 'mode/htmlmixed/htmlmixed.js'),
@@ -116,6 +107,7 @@ const paths = {
   ],
 
   vendorMain: [
+    resolve('opbeat-react'),
     resolve('jquery', '.js', '.min.js'),
     resolve('bootstrap', 'npm.js', 'bootstrap.min.js'),
     resolve('d3', '.js', '.min.js'),
@@ -129,12 +121,6 @@ const paths = {
     resolve('mousetrap', '.js', '.min.js'),
     resolve('lightbox2', '.js', '.min.js'),
     resolve('rx', 'index.js', 'dist/rx.all.min.js')
-  ],
-
-  js: [
-    'client/main.js',
-    'client/frame-runner.js',
-    'client/plugin.js'
   ],
 
   less: './client/less/main.less',
@@ -157,10 +143,6 @@ const paths = {
   challenges: [
     'seed/challenges/*/*.json'
   ]
-};
-
-const webpackOptions = {
-  devtool: 'inline-source-map'
 };
 
 const errorNotifier = notify.onError({
@@ -188,11 +170,17 @@ function delRev(dest, manifestName) {
 
 gulp.task('serve', function(cb) {
   let called = false;
+  let execParams = path.normalize('node_modules/.bin/babel-node');
+  // When in development we can spawn a node debugger
+  // https://nodejs.org/en/docs/inspector/
+  if (__DEV__) {
+    execParams = execParams + ' --inspect';
+  }
   const monitor = nodemon({
     script: paths.server,
     ext: '.jsx .js .json',
     ignore: paths.serverIgnore,
-    exec: path.normalize('node_modules/.bin/babel-node'),
+    exec: execParams,
     env: {
       NODE_ENV: process.env.NODE_ENV || 'development',
       DEBUG: process.env.DEBUG || 'fcc:*',
@@ -243,7 +231,7 @@ gulp.task('dev-server', syncDepenedents, function() {
         host: `${hostname}:${syncPort}`
       })
     },
-    logLeval: 'debug',
+    logLevel: 'info',
     files: paths.syncWatch,
     port: syncPort,
     open: false,
@@ -257,45 +245,26 @@ gulp.task('dev-server', syncDepenedents, function() {
   });
 });
 
-gulp.task('lint-js', function() {
-  return gulp.src([
-    'common/**/*.js',
-    'common/**/*.jsx',
-    'client/**/*.js',
-    'client/**/*.jsx',
-    'server/**/*.js',
-    'config/**/*.js'
-  ])
-    .pipe(eslint())
-    .pipe(eslint.format());
-});
-
-gulp.task('lint-json', function() {
-  return gulp.src(paths.challenges)
-    .pipe(jsonlint())
-    .pipe(jsonlint.reporter());
-});
-
-gulp.task('test-challenges', ['lint-json']);
-
 gulp.task('pack-client', function() {
   if (!__DEV__) { console.log('\n\nbundling production\n\n'); }
-
-  function condition(file) {
-    const filepath = file.relative;
-    return __DEV__ || (/json$/).test('' + filepath);
-  }
 
   const dest = webpackConfig.output.path;
 
   return gulp.src(webpackConfig.entry.bundle)
     .pipe(plumber({ errorHandler }))
-    .pipe(webpackStream(Object.assign(
-      {},
-      webpackConfig,
-      webpackOptions
-    )))
-    .pipe(gulpif(condition, gutil.noop(), uglify()))
+    .pipe(webpackStream(webpackConfig))
+    .pipe(gulp.dest(dest));
+});
+
+gulp.task('pack-frame-runner', function() {
+  if (!__DEV__) { console.log('\n\nbundling frame production\n\n'); }
+
+
+  const dest = webpackFrameConfig.output.path;
+
+  return gulp.src(webpackFrameConfig.entry)
+    .pipe(plumber({ errorHandler }))
+    .pipe(webpackStream(webpackFrameConfig))
     .pipe(gulp.dest(dest));
 });
 
@@ -386,12 +355,7 @@ gulp.task('js', function() {
         __DEV__ ?
           sourcemaps.write({ sourceRoot: '/vendor' }) :
           gutil.noop()
-      ),
-
-    gulp.src(paths.js)
-      .pipe(plumber({ errorHandler }))
-      .pipe(babel())
-      .pipe(__DEV__ ? gutil.noop() : uglify())
+      )
   );
 
   return jsFiles
@@ -411,9 +375,8 @@ gulp.task('js', function() {
 });
 
 
-function collector(file, memo) {
-  return Object.assign({}, JSON.parse(file.contents), memo);
-}
+const collector = (file, memo) =>
+  Object.assign(memo, JSON.parse(file.contents));
 
 function done(manifest) {
   return sortKeys(manifest);
@@ -436,6 +399,7 @@ gulp.task('build', [
   'less',
   'js',
   'pack-client',
+  'pack-frame-runner',
   'move-webpack-manifest',
   'clean-webpack-manifest',
   'build-manifest'
@@ -445,25 +409,20 @@ const watchDependents = [
   'less',
   'js',
   'serve',
+  'pack-frame-runner',
   'dev-server'
 ];
 
 gulp.task('watch', watchDependents, function() {
   gulp.watch(paths.lessFiles, ['less']);
-  gulp.watch(paths.js.concat(paths.vendorChallenges), ['js']);
-  gulp.watch(paths.js, ['js']);
+  gulp.watch(paths.vendorChallenges, ['js']);
+  gulp.watch(webpackFrameConfig.entry, ['pack-frame-runner']);
 });
 
 gulp.task('default', [
   'less',
   'serve',
   'watch',
-  'dev-server'
+  'dev-server',
+  'pack-frame-runner'
 ]);
-
-gulp.task('test', function() {
-  return gulp.src('test/**/*.js')
-    .pipe(tape({
-      reporter: tapSpec()
-    }));
-});

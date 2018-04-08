@@ -1,21 +1,13 @@
-import './es6-shims';
+import initOpbeat from 'opbeat-react';
+import { createOpbeatMiddleware } from 'opbeat-react/redux';
 import Rx from 'rx';
-import React from 'react';
 import debug from 'debug';
-import { Router } from 'react-router';
-import {
-  routerMiddleware,
-  routerReducer as routing,
-  syncHistoryWithStore
-} from 'react-router-redux';
 import { render } from 'redux-epic';
-import { createHistory } from 'history';
+import createHistory from 'history/createBrowserHistory';
 import useLangRoutes from './utils/use-lang-routes';
 import sendPageAnalytics from './utils/send-page-analytics';
-import flashToToast from './utils/flash-to-toast';
 
-import createApp from '../common/app';
-import provideStore from '../common/app/provide-store';
+import { App, createApp, provideStore } from '../common/app';
 import { getLangFromPath } from '../common/app/utils/lang';
 
 // client specific epics
@@ -27,69 +19,89 @@ import {
   saveToColdStorage
 } from './cold-reload';
 
+const {
+  __OPBEAT__ORG_ID,
+  __OPBEAT__APP_ID,
+  NODE_ENV
+} = process.env;
+
+const enableOpbeat = NODE_ENV !== 'development';
+
+if (enableOpbeat) {
+  if (!__OPBEAT__ORG_ID || !__OPBEAT__APP_ID) {
+    console.error('OpBeat credentials not found in .env');
+  }
+  initOpbeat({
+    orgId: __OPBEAT__ORG_ID,
+    appId: __OPBEAT__APP_ID
+  });
+}
+
 const isDev = Rx.config.longStackSupport = debug.enabled('fcc:*');
 const log = debug('fcc:client');
 const hotReloadTimeout = 2000;
-const { csrf: { token: csrfToken } = {} } = window.__fcc__;
-const DOMContainer = document.getElementById('fcc');
-const initialState = isColdStored() ?
-  getColdStorage() :
-  window.__fcc__.data;
-const primaryLang = getLangFromPath(window.location.pathname);
-
-initialState.app.csrfToken = csrfToken;
-initialState.toasts = flashToToast(window.__fcc__.flash);
-
-// make empty object so hot reload works
-window.__fcc__ = {};
-
-const serviceOptions = { xhrPath: '/services', context: { _csrf: csrfToken } };
-
-const history = useLangRoutes(createHistory, primaryLang)();
-sendPageAnalytics(history, window.ga);
-
-const devTools = window.devToolsExtension ? window.devToolsExtension() : f => f;
-const adjustUrlOnReplay = !!window.devToolsExtension;
-
+const {
+  devToolsExtension,
+  location,
+  history: _history,
+  document,
+  ga,
+  __fcc__: {
+    data: ssrState = {},
+    csrf: {
+      token: csrfToken
+    } = {}
+  }
+} = window;
 const epicOptions = {
   isDev,
   window,
-  document: window.document,
-  location: window.location,
-  history: window.history
+  document,
+  location,
+  history: _history
 };
+
+
+const DOMContainer = document.getElementById('fcc');
+const defaultState = isColdStored() ?
+  getColdStorage() :
+  ssrState;
+const primaryLang = getLangFromPath(location.pathname);
+
+defaultState.app.csrfToken = csrfToken;
+
+const serviceOptions = {
+  context: { _csrf: csrfToken },
+  xhrPath: '/services',
+  xhrTimeout: 15000
+};
+
+const history = useLangRoutes(createHistory, primaryLang)();
+sendPageAnalytics(history, ga);
 
 createApp({
     history,
-    syncHistoryWithStore,
-    syncOptions: { adjustUrlOnReplay },
     serviceOptions,
-    initialState,
-    middlewares: [ routerMiddleware(history) ],
+    defaultState,
     epics,
     epicOptions,
-    reducers: { routing },
-    enhancers: [ devTools ]
+    enhancers: isDev && devToolsExtension && [ devToolsExtension() ],
+    middlewares: enableOpbeat && [ createOpbeatMiddleware() ]
   })
   .doOnNext(({ store }) => {
     if (module.hot && typeof module.hot.accept === 'function') {
-      module.hot.accept(err => {
-        if (err) { console.error(err); }
+      module.hot.accept(() => {
+        // note(berks): not sure this ever runs anymore after adding
+        // RHR?
         log('saving state and refreshing.');
         log('ignore react ssr warning.');
         saveToColdStorage(store.getState());
-        setTimeout(() => window.location.reload(), hotReloadTimeout);
+        setTimeout(() => location.reload(), hotReloadTimeout);
       });
     }
   })
-  .doOnNext(() => log('rendering'))
-  .flatMap(
-    ({ props, store }) => render(
-      provideStore(React.createElement(Router, props), store),
-      DOMContainer
-    ),
-    ({ store }) => store
-  )
+  .do(() => log('rendering'))
+  .flatMap(({ store }) => render(provideStore(App, store), DOMContainer))
   .subscribe(
     () => debug('react rendered'),
     err => { throw err; },

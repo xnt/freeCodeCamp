@@ -1,11 +1,11 @@
 {
   "name": "Basic Data Structures",
-  "order": 4,
+  "order": 5,
   "time": "1 hour",
   "helpRoom": "Help",
   "challenges": [
     {
-      "id": "587d7dac367417b2b2516zx5",
+      "id": "5a61985d9bb0a3540e49dc9f",
       "title": "Introduction to Arrays",
       "description": [
         [
@@ -17,7 +17,7 @@
         [
           "",
           "",
-          "In Javascript, arrays are written as comma-separated lists and are enclosed in brackets <code>[element1, element2, element3]</code>. They can be any length, and store any type of data supported by JavaScript.<br><br>Arrays can sometimes be simple and serve very basic functionalities, but they can also be complex and very powerful - all of which depends on how the programmer chooses to utilize them<br><br>From this point forward, whenever we refer to the term <dfn>array</dfn>, it will be strictly within the context of JavaScript.",
+          "In JavaScript, arrays are written as comma-separated lists and are enclosed in brackets <code>[element1, element2, element3]</code>. They can be any length, and store any type of data supported by JavaScript.<br><br>Arrays can sometimes be simple and serve very basic functionalities, but they can also be complex and very powerful - all of which depends on how the programmer chooses to utilize them<br><br>From this point forward, whenever we refer to the term <dfn>array</dfn>, it will be strictly within the context of JavaScript.",
           ""
         ],
         [
@@ -64,7 +64,7 @@
       "translations": {}
     },
     {
-      "id": "587d78b2366415b2v2512be3",
+      "id": "5a661e0f1068aca922b3ef17",
       "title": "Access an Array's Contents Using Bracket Notation",
       "description": [
         "The fundamental feature of any data structure is, of course, the ability to not only store data, but to be able to retrieve that data on command. So, now that we've learned how to create an array, let's begin to think about how we can access that array's information.",
@@ -779,7 +779,7 @@
       "description": [
         "Now you've seen all the basic operations for JavaScript objects. You can add, modify, and remove key-value pairs, check if keys exist, and iterate over all the keys in an object. As you continue learning JavaScript you will see even more versatile applications of objects. Additionally, the optional Advanced Data Structures lessons later in the curriculum also cover the ES6 <dfn>Map</dfn> and <dfn>Set</dfn> objects, both of which are similar to ordinary objects but provide some additional features. Now that you've learned the basics of arrays and objects, you're fully prepared to begin tackling more complex problems using JavaScript!",
         "<hr>",
-        "Take a look at the object we've provided in the code editor. The <code>user</code> object contains three keys. The <code>data</code> key contains four keys, one of which contains an array of <code>friends</code>. From this, you can see how flexible objects are as data structures. We've started writing a function <code>addFriend</code>. Finish writing it so that it takes a <code>user</code> object and adds the name of the <code>friend</code> argument to the array stored in <code>user.data.friends</code> and returns that array."
+        "Take a look at the object we've provided in the code editor. The <code>user</code> object contains three keys. The <code>data</code> key contains five keys, one of which contains an array of <code>friends</code>. From this, you can see how flexible objects are as data structures. We've started writing a function <code>addFriend</code>. Finish writing it so that it takes a <code>user</code> object and adds the name of the <code>friend</code> argument to the array stored in <code>user.data.friends</code> and returns that array."
       ],
       "challengeSeed": [
         "let user = {",
