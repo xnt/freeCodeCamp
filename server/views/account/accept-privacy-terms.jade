@@ -4,7 +4,7 @@ block content
     .col-xs-12.col-sm-8.col-sm-offset-2.col-md-6.col-md-offset-3
       #flash-board.alert.fade.in(style='display: none;')
           button.close(type='button', data-dismiss='alert')
-              i.fas.fa-times-circle#flash-close
+              i.fas.fa-times-circle#flash-close(aria-label='Close')
           #flash-content
   .row
     .col-xs-12
@@ -21,7 +21,7 @@ block content
                 label
                   input(id='terms', name='privacy', type='checkbox')
                   span.cr
-                    i.cr-icon.fa.fa-check
+                    i.cr-icon.fa.fa-check(aria-label='Select to Accept Terms of Service')
                   |  I accept the 
                   a(href='https://www.freecodecamp.org/terms' target='_blank') terms of service
                   |  (required).
@@ -29,7 +29,7 @@ block content
                 label
                   input(id='privacy', name='privacy', type='checkbox')
                   span.cr
-                    i.cr-icon.fa.fa-check
+                    i.cr-icon.fa.fa-check(aria-label='Select to Accept Privacy Policy')
                   |  I accept the 
                   a(href='https://www.freecodecamp.org/privacy' target='_blank') privacy policy
                   |  (required).
@@ -37,7 +37,7 @@ block content
                 label
                   input(id='quincyemails', name='quincyemails', type='checkbox')
                   span.cr
-                    i.cr-icon.fa.fa-check
+                    i.cr-icon.fa.fa-check(aria-abel='Select to get weekly Quincy emails')
                   |  I want weekly emails from Quincy (freeCodeCamp.org's founder)
               .button-spacer
               button.btn.btn-primary.btn-lg.btn-block(id='submit-button', type='submit')
