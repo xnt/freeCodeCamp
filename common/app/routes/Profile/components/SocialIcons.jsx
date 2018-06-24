@@ -6,13 +6,14 @@ import {
   Row,
   Col
 } from 'react-bootstrap';
-import FontAwesome from 'react-fontawesome';
+import FontAwesome from '@fortawesome/react-fontawesome';
+// see https://github.com/FortAwesome/react-fontawesome#external-loading
 
 import { userByNameSelector } from '../../../redux';
 
 const propTypes = {
   email: PropTypes.string,
-  githubURL: PropTypes.string,
+  githubProfile: PropTypes.string,
   isGithub: PropTypes.bool,
   isLinkedIn: PropTypes.bool,
   isTwitter: PropTypes.bool,
@@ -26,7 +27,7 @@ const propTypes = {
 const mapStateToProps = createSelector(
   userByNameSelector,
   ({
-    githubURL,
+    githubProfile,
     isLinkedIn,
     isGithub,
     isTwitter,
@@ -35,7 +36,7 @@ const mapStateToProps = createSelector(
     twitter,
     website
   }) => ({
-    githubURL,
+    githubProfile,
     isLinkedIn,
     isGithub,
     isTwitter,
@@ -55,7 +56,7 @@ function LinkedInIcon(linkedIn) {
   return (
     <a href={ linkedIn } rel='no-follow' target='_blank'>
       <FontAwesome
-        name='linkedin'
+        icon={['fab', 'linkedin']}
         size='2x'
       />
     </a>
@@ -66,7 +67,7 @@ function githubIcon(ghURL) {
   return (
     <a href={ ghURL } rel='no-follow' target='_blank'>
       <FontAwesome
-        name='github'
+        icon={['fab', 'linkedin']}
         size='2x'
       />
     </a>
@@ -77,7 +78,7 @@ function WebsiteIcon(website) {
   return (
     <a href={ website } rel='no-follow' target='_blank'>
       <FontAwesome
-        name='link'
+        icon='link'
         size='2x'
       />
     </a>
@@ -88,7 +89,7 @@ function TwitterIcon(handle) {
   return (
     <a href={ handle } rel='no-follow' target='_blank' >
       <FontAwesome
-        name='twitter'
+        icon={['fab', 'twitter']}
         size='2x'
       />
     </a>
@@ -97,7 +98,7 @@ function TwitterIcon(handle) {
 
 function SocialIcons(props) {
   const {
-    githubURL,
+    githubProfile,
     isLinkedIn,
     isGithub,
     isTwitter,
@@ -121,7 +122,7 @@ function SocialIcons(props) {
           isLinkedIn ? LinkedInIcon(linkedIn) : null
         }
         {
-          isGithub ? githubIcon(githubURL) : null
+          isGithub ? githubIcon(githubProfile) : null
         }
         {
           isWebsite ? WebsiteIcon(website) : null

@@ -4,31 +4,11 @@ Joi.objectId = require('joi-objectid')(Joi);
 const schema = Joi.object().keys({
   block: Joi.string(),
   blockId: Joi.objectId(),
-  challengeSeed: Joi.array().items(
-    Joi.string().allow('')
-  ),
-  challengeType: Joi.number().min(0).max(9).required(),
+  challengeType: Joi.number().integer().min(0).max(9).required().options({ convert: false }),
   checksum: Joi.number(),
   dashedName: Joi.string(),
   description: Joi.array().items(
-
-    // classic/modern challenges
-    Joi.string().allow(''),
-
-    // step challenges
-    Joi.array().items(
-      Joi.string().allow('')
-    ).length(4),
-
-    // quiz challenges
-    Joi.object().keys({
-      subtitle: Joi.string(),
-      question: Joi.string(),
-      choices: Joi.array(),
-      answer: Joi.number(),
-      explanation: Joi.string()
-    })
-
+    Joi.string().allow('')
   ).required(),
   fileName: Joi.string(),
   files: Joi.object().pattern(
@@ -37,15 +17,21 @@ const schema = Joi.object().keys({
       key: Joi.string(),
       ext: Joi.string(),
       name: Joi.string(),
-      head: Joi.string().allow(''),
-      tail: Joi.string().allow(''),
-      contents: Joi.string()
+      head: [
+        Joi.array().items(Joi.string().allow('')),
+        Joi.string().allow('')
+      ],
+      tail: [
+        Joi.array().items(Joi.string().allow('')),
+        Joi.string().allow('')
+      ],
+      contents: [
+        Joi.array().items(Joi.string().allow('')),
+        Joi.string().allow('')
+      ]
     })
   ),
   guideUrl: Joi.string().uri({ scheme: 'https' }),
-  head: Joi.array().items(
-    Joi.string().allow('')
-  ),
   helpRoom: Joi.string(),
   id: Joi.objectId().required(),
   isBeta: Joi.bool(),
@@ -54,7 +40,7 @@ const schema = Joi.object().keys({
   isPrivate: Joi.bool(),
   isRequired: Joi.bool(),
   name: Joi.string(),
-  order: Joi.number(),
+  order: Joi.number().options({ convert: false }),
   required: Joi.array().items(
     Joi.object().keys({
       link: Joi.string(),
@@ -67,19 +53,17 @@ const schema = Joi.object().keys({
     Joi.string().optional()
   ),
   superBlock: Joi.string(),
-  superOrder: Joi.number(),
-  suborder: Joi.number(),
-  tail: Joi.array().items(
-    Joi.string().allow('')
-  ),
+  superOrder: Joi.number().options({ convert: false }),
+  suborder: Joi.number().options({ convert: false }),
   tests: Joi.array().items(
-    Joi.string().min(2),
+    // public challenges
     Joi.object().keys({
       text: Joi.string().required(),
       testString: Joi.string().allow('').required()
     }),
+    // our tests used in certification verification
     Joi.object().keys({
-      id: Joi.objectId().required(),
+      id: Joi.string().required(),
       title: Joi.string().required()
     })
   ),

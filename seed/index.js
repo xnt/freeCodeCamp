@@ -5,11 +5,13 @@ const adler32 = require('adler32');
 
 const Rx = require('rx');
 const _ = require('lodash');
-const utils = require('../server/utils');
-const getChallenges = require('./getChallenges');
-const app = require('../server/server');
 const createDebugger = require('debug');
-const { validateChallenge } = require('./schema/challengeSchema');
+const utils = require('../server/utils');
+const { getChallenges } = require('@freecodecamp/curriculum');
+const { validateChallenge } = require(
+  './schema/challengeSchema'
+);
+const app = require('../server/server');
 
 const log = createDebugger('fcc:seed');
 // force logger to always output
@@ -82,7 +84,7 @@ Observable.combineLatest(
           .map(function(challenge, index) {
             challenge.name = nameify(challenge.title);
 
-            challenge.dashedName = dasherize(challenge.name);
+            challenge.dashedName = dasherize(challenge.title);
 
             challenge.checksum = adler32.sum(
               Buffer(

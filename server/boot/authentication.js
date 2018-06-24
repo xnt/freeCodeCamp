@@ -29,29 +29,47 @@ module.exports = function enableAuthentication(app) {
   const api = app.loopback.Router();
   const { AuthToken, User } = app.models;
 
+  router.get('/signup', (req, res) => res.redirect(301, '/signin'));
+  router.get('/email-signin', (req, res) => res.redirect(301, '/signin'));
   router.get('/login', (req, res) => res.redirect(301, '/signin'));
   router.get('/logout', (req, res) => res.redirect(301, '/signout'));
 
-  function getEmailSignin(req, res) {
-    if (isSignUpDisabled) {
-      return res.render('account/beta', {
-        title: 'New sign ups are disabled'
-      });
-    }
-    return res.render('account/email-signin', {
-      title: 'Sign in to freeCodeCamp using your Email Address'
-    });
-  }
+  router.get('/signin',
+  ifUserRedirect,
+  (req, res) => res.redirect(301, '/auth/auth0'));
 
-  router.get('/signup', ifUserRedirect, getEmailSignin);
-  router.get('/signin', ifUserRedirect, getEmailSignin);
-  router.get('/email-signin', ifUserRedirect, getEmailSignin);
+  router.get(
+    '/update-email',
+    ifNoUserRedirectHome,
+    (req, res) => res.render('account/update-email', {
+      title: 'Update your email'
+    })
+  );
 
   router.get('/signout', (req, res) => {
     req.logout();
-    res.redirect('/');
+    req.session.destroy( (err) => {
+      if (err) {
+        throw wrapHandledError(
+          new Error('could not destroy session'),
+          {
+            type: 'info',
+            message: 'Oops, something is not right.',
+            redirectTo: '/'
+          }
+        );
+      }
+      const config = {
+        signed: !!req.signedCookies,
+        domain: process.env.COOKIE_DOMAIN || 'localhost'
+      };
+      res.clearCookie('jwt_access_token', config);
+      res.clearCookie('access_token', config);
+      res.clearCookie('userId', config);
+      res.clearCookie('_csrf', config);
+      res.redirect('/');
+   });
   });
-
 
   router.get(
     '/deprecated-signin',
@@ -59,6 +77,20 @@ module.exports = function enableAuthentication(app) {
     (req, res) => res.render('account/deprecated-signin', {
       title: 'Sign in to freeCodeCamp using a Deprecated Login'
     })
+  );
+
+  router.get(
+    '/accept-privacy-terms',
+    ifNoUserRedirectHome,
+    (req, res) => {
+      const { user } = req;
+      if (user && !user.acceptedPrivacyTerms) {
+        return res.render('account/accept-privacy-terms', {
+          title: 'Privacy Policy and Terms of Service'
+        });
+      }
+      return res.redirect('/settings');
+    }
   );
 
   const defaultErrorMsg = dedent`
@@ -94,7 +126,7 @@ module.exports = function enableAuthentication(app) {
         {
           type: 'info',
           message: 'The email encoded in the link is incorrectly formatted',
-          redirectTo: '/email-sign'
+          redirectTo: '/signin'
         }
       ));
     }
@@ -107,7 +139,7 @@ module.exports = function enableAuthentication(app) {
             {
               type: 'info',
               message: defaultErrorMsg,
-              redirectTo: '/email-signin'
+              redirectTo: '/signin'
             }
           );
         }
@@ -121,7 +153,7 @@ module.exports = function enableAuthentication(app) {
                 {
                   type: 'info',
                   message: defaultErrorMsg,
-                  redirectTo: '/email-signin'
+                  redirectTo: '/signin'
                 }
               );
             }
@@ -132,7 +164,7 @@ module.exports = function enableAuthentication(app) {
                   {
                     type: 'info',
                     message: defaultErrorMsg,
-                    redirectTo: '/email-signin'
+                    redirectTo: '/signin'
                   }
                 );
               }
@@ -148,7 +180,7 @@ module.exports = function enableAuthentication(app) {
                         Looks like the link you clicked has expired,
                         please request a fresh link, to sign in.
                       `,
-                      redirectTo: '/email-signin'
+                      redirectTo: '/signin'
                     }
                   );
                 }
@@ -161,21 +193,11 @@ module.exports = function enableAuthentication(app) {
       // update user and log them in
       .map(user => user.loginByRequest(req, res))
       .do(() => {
-        let redirectTo = '/';
-
-        if (
-          req.session &&
-          req.session.returnTo
-        ) {
-          redirectTo = req.session.returnTo;
-        }
-
         req.flash(
           'success',
           'Success! You have signed in to your account. Happy Coding!'
         );
-
-        return res.redirect(redirectTo);
+        return res.redirect('/');
       })
       .subscribe(
         () => {},
@@ -187,7 +209,7 @@ module.exports = function enableAuthentication(app) {
     '/passwordless-auth',
     ifUserRedirect,
     passwordlessGetValidators,
-    createValidatorErrorHandler('errors', '/email-signup'),
+    createValidatorErrorHandler('errors', '/signin'),
     getPasswordlessAuth
   );
 
@@ -215,7 +237,19 @@ module.exports = function enableAuthentication(app) {
         )
         .flatMap(user => user.requestAuthEmail(!_user))
       )
-      .do(msg => res.status(200).send({ message: msg }))
+      .do(msg => {
+        let redirectTo = '/';
+
+        if (
+          req.session &&
+          req.session.returnTo
+        ) {
+          redirectTo = req.session.returnTo;
+        }
+
+        req.flash('info', msg);
+        return res.redirect(redirectTo);
+      })
       .subscribe(_.noop, next);
   }
 
@@ -223,10 +257,10 @@ module.exports = function enableAuthentication(app) {
     '/passwordless-auth',
     ifUserRedirect,
     passwordlessPostValidators,
-    createValidatorErrorHandler('errors', '/email-signup'),
+    createValidatorErrorHandler('errors', '/signin'),
     postPasswordlessAuth
   );
 
-  app.use('/:lang', router);
+  app.use(router);
   app.use(api);
 };

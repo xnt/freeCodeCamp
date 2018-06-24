@@ -13,7 +13,6 @@ import SectionHeader from './SectionHeader.jsx';
 import { projectsSelector } from '../../../entities';
 import { claimCert, updateUserBackend } from '../redux';
 import {
-  fetchChallenges,
   userSelector,
   hardGoTo,
   createErrorObservable
@@ -28,7 +27,7 @@ const mapStateToProps = createSelector(
   projectsSelector,
   (
     {
-      challengeMap,
+      completedChallenges,
       isRespWebDesignCert,
       is2018DataVisCert,
       isFrontEndLibsCert,
@@ -46,19 +45,19 @@ const mapStateToProps = createSelector(
     legacyProjects: projects.filter(p => p.superBlock.includes('legacy')),
     modernProjects: projects.filter(p => !p.superBlock.includes('legacy')),
     userProjects: projects
-      .map(block => buildUserProjectsMap(block, challengeMap))
+      .map(block => buildUserProjectsMap(block, completedChallenges))
       .reduce((projects, current) => ({
         ...projects,
         ...current
       }), {}),
     blockNameIsCertMap: {
-      'Applied Responsive Web Design Projects': isRespWebDesignCert,
+      'Responsive Web Design Projects': isRespWebDesignCert,
       /* eslint-disable max-len */
       'JavaScript Algorithms and Data Structures Projects': isJsAlgoDataStructCert,
       /* eslint-enable max-len */
       'Front End Libraries Projects': isFrontEndLibsCert,
       'Data Visualization Projects': is2018DataVisCert,
-      'API and Microservice Projects': isApisMicroservicesCert,
+      'APIs and Microservices Projects': isApisMicroservicesCert,
       'Information Security and Quality Assurance Projects': isInfosecQaCert,
       'Legacy Front End Projects': isFrontEndCert,
       'Legacy Back End Projects': isBackEndCert,
@@ -72,7 +71,6 @@ function mapDispatchToProps(dispatch) {
   return bindActionCreators({
     claimCert,
     createError: createErrorObservable,
-    fetchChallenges,
     hardGoTo,
     updateUserBackend
   }, dispatch);
@@ -96,19 +94,21 @@ const propTypes = {
   blockNameIsCertMap: PropTypes.objectOf(PropTypes.bool),
   claimCert: PropTypes.func.isRequired,
   createError: PropTypes.func.isRequired,
-  fetchChallenges: PropTypes.func.isRequired,
   hardGoTo: PropTypes.func.isRequired,
   legacyProjects: projectsTypes,
   modernProjects: projectsTypes,
   superBlock: PropTypes.string,
   updateUserBackend: PropTypes.func.isRequired,
   userProjects: PropTypes.objectOf(
-    PropTypes.objectOf(PropTypes.oneOfType(
+    PropTypes.oneOfType(
       [
+        // this is really messy, it should be addressed
+        // in completedChallenges migration to unify to one type
         PropTypes.string,
+        PropTypes.arrayOf(PropTypes.object),
         PropTypes.object
       ]
-    ))
+    )
   ),
   username: PropTypes.string
 };
@@ -116,16 +116,8 @@ const propTypes = {
 class CertificationSettings extends PureComponent {
   constructor(props) {
     super(props);
-
     this.buildProjectForms = this.buildProjectForms.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
-  }
-
-  componentDidMount() {
-    const { modernProjects } = this.props;
-    if (!modernProjects.length) {
-      this.props.fetchChallenges();
-    }
   }
 
   buildProjectForms({
@@ -190,7 +182,7 @@ class CertificationSettings extends PureComponent {
       <FullWidthRow key={superBlock}>
         <h3 className='project-heading'>{ projectBlockName }</h3>
         <Form
-          buttonText={ fullForm ? 'Claim Certificate' : 'Save Progress' }
+          buttonText={ fullForm ? 'Claim Certification' : 'Save Progress' }
           enableSubmit={ fullForm }
           formFields={ challengeTitles.concat([ 'id' ]) }
           hideButton={isCertClaimed}
@@ -208,10 +200,10 @@ class CertificationSettings extends PureComponent {
               block={ true }
               bsSize='lg'
               bsStyle='primary'
-              href={ `/certificates/${username}/${superBlock}`}
+              href={ `/certification/${username}/${superBlock}`}
               target='_blank'
               >
-              Show Certificate
+              Show Certification
             </Button> :
             null
         }
@@ -225,11 +217,11 @@ class CertificationSettings extends PureComponent {
     const { allProjects } = this.props;
     let project = _.find(allProjects, { superBlock: id });
     if (!project) {
-      // the submitted projects do not belong to current/legacy certificates
+      // the submitted projects do not belong to current/legacy certifications
       return this.props.createError(
         new Error(
           'Submitted projects do not belong to either current or ' +
-          'legacy certificates'
+          'legacy certifications'
         )
       );
     }
@@ -278,7 +270,7 @@ class CertificationSettings extends PureComponent {
         <FullWidthRow>
         <p>
           Add links to the live demos of your projects as you finish them.
-          Then, once you have added all 5 projects required for a certificate,
+          Then, once you have added all 5 projects required for a certification,
           you can claim it.
         </p>
         </FullWidthRow>
@@ -286,7 +278,7 @@ class CertificationSettings extends PureComponent {
           modernProjects.map(this.buildProjectForms)
         }
         <SectionHeader>
-          Legacy Certificate Settings
+          Legacy Certification Settings
         </SectionHeader>
         {
           legacyProjects.map(this.buildProjectForms)

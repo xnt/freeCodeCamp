@@ -1,6 +1,5 @@
 @import "./lib/bootstrap/bootstrap";
 @import "./lib/bootstrap-social/bootstrap-social";
-@import "./lib/ionicons/ionicons";
 @import "./lib/animate";
 @import "./lib/bootstrap/variables";
 @import "./flexgrid.less";
@@ -35,14 +34,46 @@ pre.wrappable {
   word-wrap: break-word;      /* IE 5+ */
 }
 
-//input[type=checkbox] {
-//  /* Double-sized Checkboxes */
-//  -ms-transform: scale(2); /* IE */
-//  -moz-transform: scale(2); /* FF */
-//  -webkit-transform: scale(2); /* Safari and Chrome */
-//  -o-transform: scale(2); /* Opera */
-//  padding: 10px;
-//}
+.checkbox label:after {
+  content: '';
+  display: table;
+  clear: both;
+}
+
+.checkbox .cr {
+  position: relative;
+  display: inline-block;
+  border: 1px solid #a9a9a9;
+  border-radius: .25em;
+  width: 1.3em;
+  height: 1.3em;
+  float: left;
+  margin-right: .5em;
+}
+
+.checkbox .cr .cr-icon {
+  position: absolute;
+  font-size: .8em;
+  line-height: 0;
+  top: 50%;
+  left: 15%;
+}
+
+.checkbox label input[type="checkbox"] {
+  display: none;
+}
+
+.checkbox label input[type="checkbox"]+.cr>.cr-icon {
+  opacity: 0;
+}
+
+.checkbox label input[type="checkbox"]:checked+.cr>.cr-icon {
+  opacity: 1;
+}
+
+.checkbox label input[type="checkbox"]:disabled+.cr {
+  opacity: .5;
+}
 
 .btn-group {
   border-color: @brand-primary;
@@ -98,8 +129,7 @@ h1, h2, h3, h4, h5, h6, p, li {
 // Font Icons
 // -------------------------
 
-.fa,
-[class^='ion-'] {
+.fa {
   margin-right: 5px;
 }
 
@@ -150,6 +180,24 @@ h1, h2, h3, h4, h5, h6, p, li {
 .landing-icon {
   height: 100px;
   width: 100px;
+}
+
+p.stats {
+  font-size: 2rem;
+}
+
+.green-text {
+  color: #006400;
+}
+
+.more-button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  div {
+    flex-grow: 1;
+  }
 }
 
 .completion-icon {
@@ -292,8 +340,13 @@ h1, h2, h3, h4, h5, h6, p, li {
 }
 
 a {
-  font-weight: bold;
+  font-weight: 500;
   font-size : 15px;
+}
+
+.update-link {
+  text-decoration: underline;
+  font-size: 1.4em;
 }
 
 p {
@@ -660,8 +713,8 @@ hr {
   opacity: 0.75;
 }
 
-.padded-ionic-icon {
-  padding-top: 5px;
+.night .map-challenge-title.selectedChallenge, .map-challenge-title.selectedChallenge {
+  background-color:rgb(236, 234, 234);
 }
 
 .checklist-element {
@@ -705,8 +758,12 @@ code {
   shape-rendering: crispEdges;
 }
 
-.gitter-chat-embed {
- z-index: 20000 !important;
+strong {
+  font-weight: 500;
+}
+
+.control-label {
+  font-weight: 400;
 }
 
 //uncomment this to see the dimensions of all elements outlined in red
@@ -862,6 +919,9 @@ code {
   .black-text {
     color:#111;
   }
+  .green-text {
+      color: #8CCA33;
+  }
   code {
     background-color: #242424;
     color: #02a902;
@@ -999,9 +1059,14 @@ and (max-width : 400px)  {
   width: 100%;
 }
 
+.quote-author {
+  font-style: normal;
+}
+
 // surrounding downstream import with &{}
 // creates locally scoped imports
 // and prevents vaiables from overwriting each other
 &{ @import "./code-mirror.less"; }
 &{ @import "./toastr.less"; }
 &{ @import "../../common/index.less"; }
+&{ @import "./userHome.less"; }

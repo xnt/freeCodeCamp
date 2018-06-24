@@ -1,3 +1,10 @@
+/**
+ *
+ * Any ref to fixCompletedChallengesItem should be removed post
+ * a db migration to fix all completedChallenges
+ *
+ */
+
 import _ from 'lodash';
 import debug from 'debug';
 import accepts from 'accepts';
@@ -5,49 +12,82 @@ import dedent from 'dedent';
 
 import { ifNoUserSend } from '../utils/middleware';
 import { getChallengeById, cachedMap } from '../utils/map';
+import { dasherize } from '../utils';
+
+import pathMigrations from '../resources/pathMigration.json';
+import { fixCompletedChallengeItem } from '../../common/utils';
 
 const log = debug('fcc:boot:challenges');
+
+const learnURL = 'https://learn.freecodecamp.org';
+
+const jsProjects = [
+'aaa48de84e1ecc7c742e1124',
+'a7f4d8f2483413a6ce226cac',
+'56533eb9ac21ba0edf2244e2',
+'aff0395860f5d3034dc0bfc9',
+'aa2e6f85cab2ab736c9a9b24'
+];
 
 function buildUserUpdate(
   user,
   challengeId,
-  completedChallenge,
+  _completedChallenge,
   timezone
 ) {
-  let finalChallenge;
-  let numOfAttempts = 1;
-  const updateData = { $set: {} };
-  const { timezone: userTimezone, challengeMap = {} } = user;
+  const { files } = _completedChallenge;
+  let completedChallenge = {};
 
-  const oldChallenge = challengeMap[challengeId];
+  if (jsProjects.includes(challengeId)) {
+    completedChallenge = {
+      ..._completedChallenge,
+      files: Object.keys(files)
+        .map(key => files[key])
+        .map(file => _.pick(
+          file,
+          [
+            'contents',
+            'key',
+            'index',
+            'name',
+            'path',
+            'ext'
+          ]
+        ))
+    };
+  } else {
+    completedChallenge = _.omit(_completedChallenge, ['files']);
+  }
+  let finalChallenge;
+  const updateData = {};
+  const { timezone: userTimezone, completedChallenges = [] } = user;
+
+  const oldChallenge = _.find(
+    completedChallenges,
+    ({ id }) => challengeId === id
+  );
   const alreadyCompleted = !!oldChallenge;
 
   if (alreadyCompleted) {
-    // add data from old challenge
-    if (oldChallenge.numOfAttempts) {
-      numOfAttempts = oldChallenge.numOfAttempts + 1;
-    }
     finalChallenge = {
       ...completedChallenge,
-      completedDate: oldChallenge.completedDate,
-      lastUpdated: completedChallenge.completedDate,
-      numOfAttempts
+      completedDate: oldChallenge.completedDate
     };
   } else {
     updateData.$push = {
-      progressTimestamps: {
-        timestamp: Date.now(),
-        completedChallenge: challengeId
-      }
+      ...updateData.$push,
+      progressTimestamps: Date.now()
     };
     finalChallenge = {
-      ...completedChallenge,
-      numOfAttempts
+      ...completedChallenge
     };
   }
 
   updateData.$set = {
-    [`challengeMap.${challengeId}`]: finalChallenge
+    completedChallenges: _.uniqBy(
+      [finalChallenge, ...completedChallenges.map(fixCompletedChallengeItem)],
+      'id'
+    )
   };
 
   if (
@@ -66,8 +106,7 @@ function buildUserUpdate(
   return {
     alreadyCompleted,
     updateData,
-    completedDate: finalChallenge.completedDate,
-    lastUpdated: finalChallenge.lastUpdated
+    completedDate: finalChallenge.completedDate
   };
 }
 
@@ -122,14 +161,19 @@ export default function(app) {
     redirectToCurrentChallenge
   );
 
+  router.get('/challenges', redirectToLearn);
+
+  router.get('/challenges/*', redirectToLearn);
+
+  router.get('/map', redirectToLearn);
+
   app.use(api);
-  app.use('/:lang', router);
+  app.use('/external', api);
+  app.use(router);
 
   function modernChallengeCompleted(req, res, next) {
     const type = accepts(req).type('html', 'json', 'text');
     req.checkBody('id', 'id must be an ObjectId').isMongoId();
-    req.checkBody('files', 'files must be an object with polyvinyls for keys')
-      .isFiles();
 
     const errors = req.validationErrors(true);
     if (errors) {
@@ -142,7 +186,7 @@ export default function(app) {
     }
 
     const user = req.user;
-    return user.getChallengeMap$()
+    return user.getCompletedChallenges$()
       .flatMap(() => {
         const completedDate = Date.now();
         const {
@@ -152,8 +196,7 @@ export default function(app) {
 
         const {
           alreadyCompleted,
-          updateData,
-          lastUpdated
+          updateData
         } = buildUserUpdate(
           user,
           id,
@@ -163,14 +206,14 @@ export default function(app) {
         const points = alreadyCompleted ? user.points : user.points + 1;
 
         return user.update$(updateData)
+          .doOnNext(() => user.manualReload())
           .doOnNext(({ count }) => log('%s documents updated', count))
           .map(() => {
             if (type === 'json') {
               return res.json({
                 points,
                 alreadyCompleted,
-                completedDate,
-                lastUpdated
+                completedDate
               });
             }
             return res.sendStatus(200);
@@ -193,19 +236,18 @@ export default function(app) {
       return res.sendStatus(403);
     }
 
-    return req.user.getChallengeMap$()
+    return req.user.getCompletedChallenges$()
       .flatMap(() => {
         const completedDate = Date.now();
-        const { id, solution, timezone } = req.body;
+        const { id, solution, timezone, files } = req.body;
 
         const {
           alreadyCompleted,
-          updateData,
-          lastUpdated
+          updateData
         } = buildUserUpdate(
           req.user,
           id,
-          { id, solution, completedDate },
+          { id, solution, completedDate, files },
           timezone
         );
 
@@ -219,8 +261,7 @@ export default function(app) {
               return res.json({
                 points,
                 alreadyCompleted,
-                completedDate,
-                lastUpdated
+                completedDate
               });
             }
             return res.sendStatus(200);
@@ -249,7 +290,7 @@ export default function(app) {
 
     const completedChallenge = _.pick(
       body,
-      [ 'id', 'solution', 'githubLink', 'challengeType' ]
+      [ 'id', 'solution', 'githubLink', 'challengeType', 'files' ]
     );
     completedChallenge.completedDate = Date.now();
 
@@ -269,23 +310,22 @@ export default function(app) {
     }
 
 
-    return user.getChallengeMap$()
+    return user.getCompletedChallenges$()
       .flatMap(() => {
         const {
           alreadyCompleted,
-          updateData,
-          lastUpdated
+          updateData
         } = buildUserUpdate(user, completedChallenge.id, completedChallenge);
 
         return user.update$(updateData)
+          .doOnNext(() => user.manualReload())
           .doOnNext(({ count }) => log('%s documents updated', count))
           .doOnNext(() => {
             if (type === 'json') {
               return res.send({
                 alreadyCompleted,
                 points: alreadyCompleted ? user.points : user.points + 1,
-                completedDate: completedChallenge.completedDate,
-                lastUpdated
+                completedDate: completedChallenge.completedDate
               });
             }
             return res.status(200).send(true);
@@ -318,12 +358,11 @@ export default function(app) {
     completedChallenge.completedDate = Date.now();
 
 
-    return user.getChallengeMap$()
+    return user.getCompletedChallenges$()
       .flatMap(() => {
         const {
           alreadyCompleted,
-          updateData,
-          lastUpdated
+          updateData
         } = buildUserUpdate(user, completedChallenge.id, completedChallenge);
 
         return user.update$(updateData)
@@ -333,8 +372,7 @@ export default function(app) {
               return res.send({
                 alreadyCompleted,
                 points: alreadyCompleted ? user.points : user.points + 1,
-                completedDate: completedChallenge.completedDate,
-                lastUpdated
+                completedDate: completedChallenge.completedDate
               });
             }
             return res.status(200).send(true);
@@ -348,7 +386,7 @@ export default function(app) {
     const challengeId = user && user.currentChallengeId;
     return getChallengeById(map, challengeId)
       .map(challenge => {
-        const { block, dashedName } = challenge;
+        const { block, dashedName, superBlock } = challenge;
         if (!dashedName || !block) {
           // this should normally not be hit if database is properly seeded
           throw new Error(dedent`
@@ -358,11 +396,20 @@ export default function(app) {
             db may not be properly seeded.
           `);
         }
-        return `/challenges/${block}/${dashedName}`;
+        return `${learnURL}/${dasherize(superBlock)}/${block}/${dashedName}`;
       })
       .subscribe(
-        redirect => res.redirect(redirect || '/'),
+        redirect => res.redirect(redirect || learnURL),
         next
       );
+  }
+
+  function redirectToLearn(req, res) {
+    const maybeChallenge = _.last(req.path.split('/'));
+    if (maybeChallenge in pathMigrations) {
+      const redirectPath = pathMigrations[maybeChallenge];
+      return res.status(302).redirect(`${learnURL}${redirectPath}`);
+    }
+    return res.status(302).redirect(learnURL);
   }
 }

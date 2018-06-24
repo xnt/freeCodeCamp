@@ -1,3 +1,10 @@
+/**
+ *
+ * Any ref to fixCompletedChallengesItem should be removed post
+ * a db migration to fix all completedChallenges
+ *
+ */
+
 import { Observable } from 'rx';
 import _ from 'lodash';
 
@@ -6,6 +13,7 @@ import {
   normaliseUserFields,
   userPropsForSession
 } from '../utils/publicUserProps';
+import { fixCompletedChallengeItem } from '../../common/utils';
 
 export default function userServices() {
   return {
@@ -18,10 +26,10 @@ export default function userServices() {
       cb) {
       const queryUser = req.user;
       const source = queryUser && Observable.forkJoin(
-        queryUser.getChallengeMap$(),
+        queryUser.getCompletedChallenges$(),
         queryUser.getPoints$(),
-        (challengeMap, progressTimestamps) => ({
-          challengeMap,
+        (completedChallenges, progressTimestamps) => ({
+          completedChallenges,
           progress: getProgress(progressTimestamps, queryUser.timezone)
         })
       );
@@ -29,10 +37,12 @@ export default function userServices() {
         () => !queryUser,
         Observable.of({}),
         Observable.defer(() => source)
-          .map(({ challengeMap, progress }) => ({
+          .map(({ completedChallenges, progress }) => ({
             ...queryUser.toJSON(),
             ...progress,
-            challengeMap
+            completedChallenges: completedChallenges.map(
+              fixCompletedChallengeItem
+            )
           }))
           .map(
             user => ({
@@ -41,7 +51,7 @@ export default function userServices() {
                   [user.username]: {
                     ..._.pick(user, userPropsForSession),
                     isEmailVerified: !!user.emailVerified,
-                    isGithub: !!user.githubURL,
+                    isGithub: !!user.githubProfile,
                     isLinkedIn: !!user.linkedIn,
                     isTwitter: !!user.twitter,
                     isWebsite: !!user.website,

@@ -1,5 +1,12 @@
+/**
+ *
+ * Any ref to fixCompletedChallengesItem should be removed post
+ * a db migration to fix all completedChallenges
+ *
+ */
+
 import { Observable } from 'rx';
-import uuid from 'uuid';
+import uuid from 'uuid/v4';
 import moment from 'moment';
 import dedent from 'dedent';
 import debugFactory from 'debug';
@@ -7,7 +14,10 @@ import { isEmail } from 'validator';
 import path from 'path';
 import loopback from 'loopback';
 import _ from 'lodash';
+import { ObjectId } from 'mongodb';
+import jwt from 'jsonwebtoken';
 
+import { fixCompletedChallengeItem } from '../utils';
 import { themes } from '../utils/themes';
 import { saveUser, observeMethod } from '../../server/utils/rx.js';
 import { blacklistedUsernames } from '../../server/utils/constants.js';
@@ -22,7 +32,7 @@ import {
   publicUserProps
 } from '../../server/utils/publicUserProps';
 
-const debug = debugFactory('fcc:models:user');
+const log = debugFactory('fcc:models:user');
 const BROWNIEPOINTS_TIMEOUT = [1, 'hour'];
 
 const createEmailError = redirectTo => wrapHandledError(
@@ -41,50 +51,52 @@ function destroyAll(id, Model) {
   )({ userId: id });
 }
 
-function buildChallengeMapUpdate(challengeMap, project) {
+function buildCompletedChallengesUpdate(completedChallenges, project) {
   const key = Object.keys(project)[0];
   const solutions = project[key];
-  const currentChallengeMap = { ...challengeMap };
-  const currentCompletedProjects = _.pick(
-    currentChallengeMap,
-    Object.keys(solutions)
-  );
+  const solutionKeys = Object.keys(solutions);
+  const currentCompletedChallenges = [
+    ...completedChallenges.map(fixCompletedChallengeItem)
+  ];
+  const currentCompletedProjects = currentCompletedChallenges
+    .filter(({id}) => solutionKeys.includes(id));
   const now = Date.now();
-  const update = Object.keys(solutions).reduce((update, currentId) => {
-    if (
-      currentId in currentCompletedProjects &&
-      currentCompletedProjects[currentId].solution !== solutions[currentId]
-    ) {
-      return {
-        ...update,
-        [currentId]: {
-          ...currentCompletedProjects[currentId],
-          solution: solutions[currentId],
-          numOfAttempts: currentCompletedProjects[currentId].numOfAttempts + 1
-        }
+  const update = solutionKeys.reduce((update, currentId) => {
+    const indexOfCurrentId = _.findIndex(
+      update,
+      ({id}) => id === currentId
+    );
+    const isCurrentlyCompleted = indexOfCurrentId !== -1;
+    if (isCurrentlyCompleted) {
+      update[indexOfCurrentId] = {
+        ..._.find(update, ({id}) => id === currentId),
+        solution: solutions[currentId]
       };
     }
-    if (!(currentId in currentCompletedProjects)) {
-      return {
+    if (!isCurrentlyCompleted) {
+      return [
         ...update,
-        [currentId]: {
+        {
           id: currentId,
           solution: solutions[currentId],
           challengeType: 3,
-          completedDate: now,
-          numOfAttempts: 1
+          completedDate: now
         }
-      };
+      ];
     }
     return update;
-  }, {});
-  const updatedExisting = {
-    ...currentCompletedProjects,
-    ...update
-  };
+  }, currentCompletedProjects);
+  const updatedExisting = _.uniqBy(
+    [
+      ...update,
+      ...currentCompletedChallenges
+    ],
+    'id'
+  );
   return {
-    ...currentChallengeMap,
-    ...updatedExisting
+    updated: updatedExisting,
+    isNewCompletionCount:
+      updatedExisting.length - completedChallenges.length
   };
 }
 
@@ -219,7 +231,14 @@ module.exports = function(User) {
         // assign random username to new users
         // actual usernames will come from github
         // use full uuid to ensure uniqueness
-        user.username = 'fcc' + uuid.v4();
+        user.username = 'fcc' + uuid();
+
+        if (!user.externalId) {
+          user.externalId = uuid();
+        }
+        if (!user.unsubscribeId) {
+          user.unsubscribeId = new ObjectId();
+        }
 
         if (!user.progressTimestamps) {
           user.progressTimestamps = [];
@@ -234,7 +253,7 @@ module.exports = function(User) {
               throw wrapHandledError(
                 new Error('user already exists'),
                 {
-                  redirectTo: '/email-signin',
+                  redirectTo: '/signin',
                   message: dedent`
         The ${user.email} email address is already associated with an account.
         Try signing in with it here instead.
@@ -269,7 +288,15 @@ module.exports = function(User) {
         }
 
         if (user.progressTimestamps.length === 0) {
-          user.progressTimestamps.push({ timestamp: Date.now() });
+          user.progressTimestamps.push(Date.now());
+        }
+
+        if (!user.externalId) {
+          user.externalId = uuid();
+        }
+
+        if (!user.unsubscribeId) {
+          user.unsubscribeId = new ObjectId();
         }
       })
       .ignoreElements();
@@ -281,7 +308,7 @@ module.exports = function(User) {
   User.observe('before delete', function(ctx, next) {
     const UserIdentity = User.app.models.UserIdentity;
     const UserCredential = User.app.models.UserCredential;
-    debug('removing user', ctx.where);
+    log('removing user', ctx.where);
     var id = ctx.where && ctx.where.id ? ctx.where.id : null;
     if (!id) {
       return next();
@@ -298,20 +325,20 @@ module.exports = function(User) {
     )
       .subscribe(
         function(data) {
-          debug('deleted', data);
+          log('deleted', data);
         },
         function(err) {
-          debug('error deleting user %s stuff', id, err);
+          log('error deleting user %s stuff', id, err);
           next(err);
         },
         function() {
-          debug('user stuff deleted for user %s', id);
+          log('user stuff deleted for user %s', id);
           next();
         }
       );
   });
 
-  debug('setting up user hooks');
+  log('setting up user hooks');
   // overwrite lb confirm
   User.confirm = function(uid, token, redirectTo) {
     return this.findById(uid)
@@ -349,6 +376,17 @@ module.exports = function(User) {
       });
   };
 
+  function manualReload() {
+    this.reload((err, instance) => {
+      if (err) {
+        throw Error('failed to reload user instance');
+      }
+      Object.assign(this, instance);
+      log('user reloaded from db');
+    });
+  }
+  User.prototype.manualReload = manualReload;
+
   User.prototype.loginByRequest = function loginByRequest(req, res) {
     const {
       query: {
@@ -359,9 +397,12 @@ module.exports = function(User) {
       .do(accessToken => {
         const config = {
           signed: !!req.signedCookies,
-          maxAge: accessToken.ttl
+          maxAge: accessToken.ttl,
+          domain: process.env.COOKIE_DOMAIN || 'localhost'
         };
         if (accessToken && accessToken.id) {
+          const jwtAccess = jwt.sign({accessToken}, process.env.JWT_SECRET);
+          res.cookie('jwt_access_token', jwtAccess, config);
           res.cookie('access_token', accessToken.id, config);
           res.cookie('userId', accessToken.userId, config);
         }
@@ -387,10 +428,15 @@ module.exports = function(User) {
     );
   };
 
-  User.afterRemote('logout', function(ctx, result, next) {
-    var res = ctx.res;
-    res.clearCookie('access_token');
-    res.clearCookie('userId');
+  User.afterRemote('logout', function({req, res}, result, next) {
+    const config = {
+      signed: !!req.signedCookies,
+      domain: process.env.COOKIE_DOMAIN || 'localhost'
+    };
+    res.clearCookie('jwt_access_token', config);
+    res.clearCookie('access_token', config);
+    res.clearCookie('userId', config);
+    res.clearCookie('_csrf', config);
     next();
   });
 
@@ -398,7 +444,7 @@ module.exports = function(User) {
     if (!username && (!email || !isEmail(email))) {
       return Promise.resolve(false);
     }
-    debug('checking existence');
+    log('checking existence');
 
     // check to see if username is on blacklist
     if (username && blacklistedUsernames.indexOf(username) !== -1) {
@@ -411,7 +457,7 @@ module.exports = function(User) {
     } else {
       where.email = email ? email.toLowerCase() : email;
     }
-    debug('where', where);
+    log('where', where);
     return User.count(where)
     .then(count => count > 0);
   };
@@ -493,11 +539,27 @@ module.exports = function(User) {
     )({ ttl });
   };
 
-  User.prototype.getEncodedEmail = function getEncodedEmail() {
-    if (!this.email) {
+  User.prototype.createDonation = function createDonation(donation = {}) {
+    return Observable.fromNodeCallback(
+      this.donations.create.bind(this.donations)
+    )(donation)
+    .do(() => this.update$({
+      $set: {
+        isDonating: true
+      },
+      $push: {
+        donationEmails: donation.email
+        }
+      })
+    )
+    .do(() => this.manualReload());
+  };
+
+  User.prototype.getEncodedEmail = function getEncodedEmail(email) {
+    if (!email) {
       return null;
     }
-    return Buffer(this.email).toString('base64');
+    return Buffer(email).toString('base64');
   };
 
   User.decodeEmail = email => Buffer(email, 'base64').toString();
@@ -551,14 +613,9 @@ module.exports = function(User) {
           this.update$({ emailAuthLinkTTL })
         );
       })
-      .map(() => isSignUp ?
+      .map(() =>
         dedent`
-          We created a new account for you!
-          Check your email and click the sign in link we sent you.
-        ` :
-        dedent`
-          We found your existing account.
-          Check your email and click the sign in link we sent you.
+          Check your email and click the link we sent you to confirm you email.
         `
       );
   }
@@ -566,60 +623,60 @@ module.exports = function(User) {
   User.prototype.requestAuthEmail = requestAuthEmail;
 
   User.prototype.requestUpdateEmail = function requestUpdateEmail(newEmail) {
+
     const currentEmail = this.email;
-    return Observable.defer(() => {
-      const isOwnEmail = isTheSame(newEmail, currentEmail);
-      const sameUpdate = isTheSame(newEmail, this.newEmail);
-      const messageOrNull = getWaitMessage(this.emailVerifyTTL);
-      if (isOwnEmail) {
-        if (this.emailVerified) {
-          // email is already associated and verified with this account
-          throw wrapHandledError(
-            new Error('email is already verified'),
-            {
-              type: 'info',
-              message: `${newEmail} is already associated with this account.`
-            }
-          );
-        } else if (!this.emailVerified && messageOrNull) {
-            // email is associated but unverified and
-            // email is within time limit
-            throw wrapHandledError(
-              new Error(),
-              {
-                type: 'info',
-                message: messageOrNull
-              }
-            );
-          }
-      }
-      if (sameUpdate && messageOrNull) {
-        // trying to update with the same newEmail and
-        // confirmation email is still valid
-        throw wrapHandledError(
-          new Error(),
-          {
-            type: 'info',
-            message: dedent`
-            We have already sent an email confirmation request to ${newEmail}.
-            Please check your inbox.`
-          }
-        );
-      }
-      if (!isEmail('' + newEmail)) {
-        throw createEmailError();
-      }
-      // newEmail is not associated with this user, and
-      // this attempt to change email is the first or
-      // previous attempts have expired
-      return Observable.if(
-        () => isOwnEmail || (sameUpdate && messageOrNull),
-        Observable.empty(),
-        // defer prevents the promise from firing prematurely (before subscribe)
-        Observable.defer(() => User.doesExist(null, newEmail))
-      )
+    const isOwnEmail = isTheSame(newEmail, currentEmail);
+    const isResendUpdateToSameEmail = isTheSame(newEmail, this.newEmail);
+    const isLinkSentWithinLimit = getWaitMessage(this.emailVerifyTTL);
+    const isVerifiedEmail = this.emailVerified;
+
+    if (isOwnEmail && isVerifiedEmail) {
+      // email is already associated and verified with this account
+      throw wrapHandledError(
+        new Error('email is already verified'),
+        {
+          type: 'info',
+          message: `
+            ${newEmail} is already associated with this account.
+            You can update a new email address instead.`
+        }
+      );
+    }
+    if (isResendUpdateToSameEmail && isLinkSentWithinLimit) {
+      // trying to update with the same newEmail and
+      // confirmation email is still valid
+      throw wrapHandledError(
+        new Error(),
+        {
+          type: 'info',
+          message: dedent`
+          We have already sent an email confirmation request to ${newEmail}.
+          ${isLinkSentWithinLimit}`
+        }
+      );
+    }
+    if (!isEmail('' + newEmail)) {
+      throw createEmailError();
+    }
+
+    // newEmail is not associated with this user, and
+    // this attempt to change email is the first or
+    // previous attempts have expired
+    if (
+        !isOwnEmail ||
+        (isOwnEmail && !isVerifiedEmail) ||
+        (isResendUpdateToSameEmail && !isLinkSentWithinLimit)
+      ) {
+      const updateConfig = {
+        newEmail,
+        emailVerified: false,
+        emailVerifyTTL: new Date()
+      };
+
+      // defer prevents the promise from firing prematurely (before subscribe)
+      return Observable.defer(() => User.doesExist(null, newEmail))
       .do(exists => {
-        if (exists) {
+        if (exists && !isOwnEmail) {
           // newEmail is not associated with this account,
           // but is associated with different account
           throw wrapHandledError(
@@ -632,22 +689,25 @@ module.exports = function(User) {
           );
         }
       })
-      .flatMap(() => {
-        const update = {
-            newEmail,
-            emailVerified: false,
-            emailVerifyTTL: new Date()
-          };
-        return this.update$(update)
-          .do(() => Object.assign(this, update))
-          .flatMap(() => this.requestAuthEmail(false, newEmail));
+      .flatMap(()=>{
+        return Observable.forkJoin(
+          this.update$(updateConfig),
+          this.requestAuthEmail(false, newEmail),
+          (_, message) => message
+        )
+        .doOnNext(() => this.manualReload());
       });
-    });
+
+    } else {
+      return 'Something unexpected happened whilst updating your email.';
+    }
   };
 
-  User.prototype.requestChallengeMap = function requestChallengeMap() {
-    return this.getChallengeMap$();
-  };
+  function requestCompletedChallenges() {
+    return this.getCompletedChallenges$();
+  }
+
+  User.prototype.requestCompletedChallenges = requestCompletedChallenges;
 
   User.prototype.requestUpdateFlags = function requestUpdateFlags(values) {
     const flagsToCheck = Object.keys(values);
@@ -661,8 +721,7 @@ module.exports = function(User) {
         will introduce a change in this user.
         `
       )
-        .do(console.log)
-        .map(() => dedent`Your settings have not been updated.`);
+       .map(() => dedent`Your settings have not been updated.`);
     }
     return Observable.from(valuesToUpdate)
       .flatMap(flag => Observable.of({ flag, newValue: values[flag] }))
@@ -672,15 +731,11 @@ module.exports = function(User) {
           Observable.from(updates)
             .flatMap(({ flag, newValue }) => {
               return Observable.fromPromise(User.doesExist(null, this.email))
-                .flatMap(() => {
-                  return this.update$({ [flag]: newValue })
-                  .do(() => {
-                    this[flag] = newValue;
-                  });
-                });
+                .flatMap(() => this.update$({ [flag]: newValue }));
             })
         );
       })
+      .doOnNext(() => this.manualReload())
       .map(() => dedent`
         We have successfully updated your account.
       `);
@@ -705,27 +760,54 @@ module.exports = function(User) {
         updatedPortfolio[pIndex] = { ...portfolioItem };
       }
       return this.update$({ portfolio: updatedPortfolio })
-        .do(() => {
-          this.portfolio = updatedPortfolio;
-        })
+        .do(() => this.manualReload())
         .map(() => dedent`
           Your portfolio has been updated.
         `);
     };
 
   User.prototype.updateMyProjects = function updateMyProjects(project) {
-    const updateData = {};
-    return this.getChallengeMap$()
-      .flatMap(challengeMap => {
-        updateData.challengeMap = buildChallengeMapUpdate(
-          challengeMap,
+    const updateData = { $set: {} };
+    return this.getCompletedChallenges$()
+      .flatMap(() => {
+        const {
+          updated,
+          isNewCompletionCount
+        } = buildCompletedChallengesUpdate(
+          this.completedChallenges,
           project
         );
+        updateData.$set.completedChallenges = updated;
+        if (isNewCompletionCount) {
+          let points = [];
+          // give points a length of isNewCompletionCount
+          points[isNewCompletionCount - 1] = true;
+          updateData.$push = {};
+          updateData.$push.progressTimestamps = {
+            $each: points.map(() => Date.now())
+          };
+        }
         return this.update$(updateData);
       })
-      .do(() => Object.assign(this, updateData))
+      .doOnNext(() => this.manualReload() )
       .map(() => dedent`
         Your projects have been updated.
+      `);
+  };
+
+  User.prototype.updateMyProfileUI = function updateMyProfileUI(profileUI) {
+    const oldUI = { ...this.profileUI };
+    const update = {
+      profileUI: {
+        ...oldUI,
+        ...profileUI
+      }
+    };
+
+    return this.update$(update)
+      .doOnNext(() => this.manualReload())
+      .map(() => dedent`
+        Your privacy settings have been updated.
       `);
   };
 
@@ -752,14 +834,58 @@ module.exports = function(User) {
       }
 
       return this.update$({ username: newUsername })
-        .do(() => {
-          this.username = newUsername;
-        })
+        .do(() => this.manualReload())
         .map(() => dedent`
         Your username has been updated successfully.
         `);
     });
   };
+
+  function prepUserForPublish(user, profileUI) {
+    const {
+      about,
+      calendar,
+      completedChallenges,
+      isDonating,
+      location,
+      name,
+      points,
+      portfolio,
+      streak,
+      username
+    } = user;
+    const {
+      isLocked = true,
+      showAbout = false,
+      showCerts = false,
+      showDonation = false,
+      showHeatMap = false,
+      showLocation = false,
+      showName = false,
+      showPoints = false,
+      showPortfolio = false,
+      showTimeLine = false
+    } = profileUI;
+
+    if (isLocked) {
+      return {
+        isLocked,
+        username
+      };
+    }
+    return {
+      ...user,
+      about: showAbout ? about : '',
+      calendar: showHeatMap ? calendar : {},
+      completedChallenges: showCerts && showTimeLine ? completedChallenges : [],
+      isDonating: showDonation ? isDonating : null,
+      location: showLocation ? location : '',
+      name: showName ? name : '',
+      points: showPoints ? points : null,
+      portfolio: showPortfolio ? portfolio : [],
+      streak: showHeatMap ? streak : {}
+    };
+  }
 
   User.getPublicProfile = function getPublicProfile(username, cb) {
     return User.findOne$({ where: { username }})
@@ -767,20 +893,31 @@ module.exports = function(User) {
         if (!user) {
           return Observable.of({});
         }
-        const { challengeMap, progressTimestamps, timezone } = user;
+        const {
+          completedChallenges,
+          progressTimestamps,
+          timezone,
+          profileUI
+        } = user;
+        const allUser = {
+          ..._.pick(user, publicUserProps),
+          isGithub: !!user.githubProfile,
+          isLinkedIn: !!user.linkedIn,
+          isTwitter: !!user.twitter,
+          isWebsite: !!user.website,
+          points: progressTimestamps.length,
+          completedChallenges,
+          ...getProgress(progressTimestamps, timezone),
+          ...normaliseUserFields(user)
+        };
+
+        const publicUser = prepUserForPublish(allUser, profileUI);
+
         return Observable.of({
           entities: {
             user: {
               [user.username]: {
-                ..._.pick(user, publicUserProps),
-                isGithub: !!user.githubURL,
-                isLinkedIn: !!user.linkedIn,
-                isTwitter: !!user.twitter,
-                isWebsite: !!user.website,
-                points: progressTimestamps.length,
-                challengeMap,
-                ...getProgress(progressTimestamps, timezone),
-                ...normaliseUserFields(user)
+                ...publicUser
               }
             }
           },
@@ -883,7 +1020,7 @@ module.exports = function(User) {
           },
           (e) => cb(e, null, dev ? { giver, receiver, data } : null),
           () => {
-            debug('brownie points assigned completed');
+            log('brownie points assigned completed');
           }
         );
     };
@@ -942,7 +1079,9 @@ module.exports = function(User) {
       );
       return Promise.reject(err);
     }
-    return this.update$({ theme }).toPromise();
+    return this.update$({ theme })
+      .doOnNext(() => this.manualReload())
+      .toPromise();
   };
 
   // deprecated. remove once live
@@ -1000,16 +1139,16 @@ module.exports = function(User) {
         return user.progressTimestamps;
       });
   };
-  User.prototype.getChallengeMap$ = function getChallengeMap$() {
+  User.prototype.getCompletedChallenges$ = function getCompletedChallenges$() {
     const id = this.getId();
     const filter = {
       where: { id },
-      fields: { challengeMap: true }
+      fields: { completedChallenges: true }
     };
     return this.constructor.findOne$(filter)
       .map(user => {
-        this.challengeMap = user.challengeMap;
-        return user.challengeMap;
+        this.completedChallenges = user.completedChallenges;
+        return user.completedChallenges;
       });
   };
 

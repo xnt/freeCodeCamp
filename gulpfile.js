@@ -38,7 +38,9 @@ const Rx = require('rx'),
 
   // rev
   rev = require('gulp-rev'),
-  revDel = require('rev-del');
+  revDel = require('rev-del'),
+
+  { createPathMigrationMap } = require('./seed/createPathMigrationMap');
 
 Rx.config.longStackSupport = true;
 const sync = browserSync.create('fcc-sync-server');
@@ -107,7 +109,6 @@ const paths = {
   ],
 
   vendorMain: [
-    resolve('opbeat-react'),
     resolve('jquery', '.js', '.min.js'),
     resolve('bootstrap', 'npm.js', 'bootstrap.min.js'),
     resolve('d3', '.js', '.min.js'),
@@ -395,6 +396,10 @@ gulp.task('build-manifest', buildDependents, function() {
     .pipe(gulp.dest('server/'));
 });
 
+gulp.task('generate-migration-map', done => {
+  createPathMigrationMap().then(done);
+});
+
 gulp.task('build', [
   'less',
   'js',
@@ -402,7 +407,8 @@ gulp.task('build', [
   'pack-frame-runner',
   'move-webpack-manifest',
   'clean-webpack-manifest',
-  'build-manifest'
+  'build-manifest',
+  'generate-migration-map'
 ]);
 
 const watchDependents = [
@@ -424,5 +430,6 @@ gulp.task('default', [
   'serve',
   'watch',
   'dev-server',
-  'pack-frame-runner'
+  'pack-frame-runner',
+  'generate-migration-map'
 ]);
