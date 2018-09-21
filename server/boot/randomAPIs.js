@@ -1,4 +1,5 @@
 import request from 'request';
+
 import constantStrings from '../utils/constantStrings.json';
 import testimonials from '../resources/testimonials.json';
 
@@ -14,12 +15,14 @@ module.exports = function(app) {
   router.get('/twitch', twitch);
   router.get('/u/:email', unsubscribe);
   router.get('/unsubscribe/:email', unsubscribe);
-  router.get('/submit-cat-photo', submitCatPhoto);
+  router.get('/ue/:unsubscribeId', unsubscribeById);
   router.get(
     '/the-fastest-web-page-on-the-internet',
     theFastestWebPageOnTheInternet
   );
+  router.get('/unsubscribed/:unsubscribeId', unsubscribedWithId);
   router.get('/unsubscribed', unsubscribed);
+  router.get('/resubscribe/:unsubscribeId', resubscribe);
   router.get('/nonprofits', nonprofits);
   router.get('/nonprofits-form', nonprofitsForm);
   router.get('/pmi-acp-agile-project-managers', agileProjectManagers);
@@ -80,10 +83,6 @@ module.exports = function(app) {
       stories: testimonials,
       moreStories: false
     });
-  }
-
-  function submitCatPhoto(req, res) {
-    res.send('Submitted!');
   }
 
   function bootcampCalculator(req, res) {
@@ -162,7 +161,46 @@ module.exports = function(app) {
           req.flash('info', {
             msg: 'We\'ve successfully updated your Email preferences.'
           });
-          return res.redirect('/unsubscribed/' + req.params.email);
+          return res.redirect('/unsubscribed');
+        })
+        .catch(next);
+    });
+  }
+
+  function unsubscribeById(req, res, next) {
+    const { unsubscribeId } = req.params;
+    if (!unsubscribeId) {
+      req.flash('info', {
+        msg: 'We could not find an account to unsubscribe'
+      });
+      return res.redirect('/');
+    }
+    return User.find({ where: { unsubscribeId } }, (err, users) => {
+      if (err || !users.length) {
+        req.flash('info', {
+          msg: 'We could not find an account to unsubscribe'
+        });
+        return res.redirect('/');
+      }
+      const updates = users.map(user => {
+        return new Promise((resolve, reject) =>
+          user.updateAttributes({
+            sendQuincyEmail: false
+          }, (err) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          })
+        );
+      });
+      return Promise.all(updates)
+        .then(() => {
+          req.flash('success', {
+            msg: 'We\'ve successfully updated your email preferences.'
+          });
+          return res.redirect(`/unsubscribed/${unsubscribeId}`);
         })
         .catch(next);
     });
@@ -173,6 +211,50 @@ module.exports = function(app) {
       title: 'You have been unsubscribed'
     });
   }
+
+  function unsubscribedWithId(req, res) {
+    const { unsubscribeId } = req.params;
+    return res.render('resources/unsubscribed', {
+      title: 'You have been unsubscribed',
+      unsubscribeId
+    });
+  }
+
+  function resubscribe(req, res, next) {
+    const { unsubscribeId } = req.params;
+    return User.find({ where: { unsubscribeId } },
+      (err, users) => {
+        if (err || !users.length) {
+          req.flash('info', {
+            msg: 'We could not find an account to unsubscribe'
+          });
+          return res.redirect('/');
+
+        }
+        const [ user ] = users;
+        return new Promise((resolve, reject) =>
+          user.updateAttributes({
+            sendQuincyEmail: true
+          }, (err) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          })
+        )
+        .then(() => {
+          req.flash('success', {
+            msg:
+            'We\'ve successfully updated your email preferences. Thank you ' +
+            'for resubscribing.'
+          });
+          return res.redirect('/');
+        })
+        .catch(next);
+    });
+  }
+
 
   function githubCalls(req, res, next) {
     var githubHeaders = {

@@ -1,7 +1,7 @@
 {
   "name": "user",
   "base": "User",
-  "strict": true,
+  "strict": "filter",
   "idInjection": true,
   "emailVerificationRequired": false,
   "trackChanges": false,
@@ -101,7 +101,7 @@
     },
     "acceptedPrivacyTerms": {
       "type": "boolean",
-      "default": false
+      "default": true
     },
     "sendQuincyEmail": {
       "type": "boolean",
@@ -167,6 +167,11 @@
       "description": "Camper is information security and quality assurance certified",
       "default": false
     },
+    "is2018FullStackCert": {
+      "type": "boolean",
+      "description": "Camper is full stack certified (2018)",
+      "default": false
+    },
     "completedChallenges": {
       "type": [
         {
@@ -206,6 +211,10 @@
       "type": "array",
       "default": []
     },
+    "yearsTopContributor": {
+      "type": "array",
+      "default": []
+    },
     "rand": {
       "type": "number",
       "index": true
@@ -218,52 +227,17 @@
       "default": "default"
     },
     "profileUI": {
-      "type": {
-        "isLocked": {
-          "type": "boolean",
-          "description": "Campers profile shows only their username and avatar to the public",
-          "default": true
-        },
-        "showAbout": {
-          "type": "boolean",
-          "description": "For granular control of what is shown to the public",
-          "default": false
-        },
-        "showCerts": {
-          "type": "boolean",
-          "description": "For granular control of what is shown to the public",
-          "default": false
-        },
-        "showHeatMap": {
-          "type": "boolean",
-          "description": "For granular control of what is shown to the public",
-          "default": false
-        },
-        "showLocation": {
-          "type": "boolean",
-          "description": "For granular control of what is shown to the public",
-          "default": false
-        },
-        "showName": {
-          "type": "boolean",
-          "description": "For granular control of what is shown to the public",
-          "default": false
-        },
-        "showPoints": {
-          "type": "boolean",
-          "description": "For granular control of what is shown to the public",
-          "default": false
-        },
-        "showPortfolio": {
-          "type": "boolean",
-          "description": "For granular control of what is shown to the public",
-          "default": false
-        },
-        "showTimeLine": {
-          "type": "boolean",
-          "description": "For granular control of what is shown to the public",
-          "default": false
-        }
+      "type": "object",
+      "default": {
+        "isLocked": true,
+        "showAbout": false,
+        "showCerts": false,
+        "showHeatMap": false,
+        "showLocation": false,
+        "showName": false,
+        "showPoints": false,
+        "showPortfolio": false,
+        "showTimeLine": false
       }
     },
     "badges": {
@@ -275,19 +249,23 @@
       },
       "default": {}
     },
-    "donationEmails": [ "string" ],
+    "donationEmails": {
+      "type": [
+        "string"
+      ]
+    },
     "isDonating": {
       "type": "boolean",
-      "default": false,
-      "description": "Does the camper have an active donation"
+      "description": "Does the camper have an active donation",
+      "default": false
     }
   },
   "validations": [],
   "relations": {
     "donations": {
       "type": "hasMany",
-      "modal": "donation",
-      "foreignKey": ""
+      "foreignKey": "",
+      "modal": "donation"
     },
     "credentials": {
       "type": "hasMany",
@@ -311,6 +289,11 @@
       "options": {
         "disableInclude": true
       }
+    },
+    "articles": {
+      "type": "hasMany",
+      "model": "article",
+      "foreignKey": "externalId"
     }
   },
   "acls": [

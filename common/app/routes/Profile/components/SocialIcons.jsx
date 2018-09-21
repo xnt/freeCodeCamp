@@ -2,12 +2,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { createSelector } from 'reselect';
 import { connect } from 'react-redux';
+import { Row, Col } from 'react-bootstrap';
+import FontAwesomeIcon from '@fortawesome/react-fontawesome';
 import {
-  Row,
-  Col
-} from 'react-bootstrap';
-import FontAwesome from '@fortawesome/react-fontawesome';
-// see https://github.com/FortAwesome/react-fontawesome#external-loading
+  faLinkedin,
+  faGithub,
+  faTwitter
+} from '@fortawesome/free-brands-svg-icons';
+import { faLink } from '@fortawesome/free-solid-svg-icons';
 
 import { userByNameSelector } from '../../../redux';
 
@@ -18,7 +20,7 @@ const propTypes = {
   isLinkedIn: PropTypes.bool,
   isTwitter: PropTypes.bool,
   isWebsite: PropTypes.bool,
-  linkedIn: PropTypes.string,
+  linkedin: PropTypes.string,
   show: PropTypes.bool,
   twitter: PropTypes.string,
   website: PropTypes.string
@@ -32,7 +34,7 @@ const mapStateToProps = createSelector(
     isGithub,
     isTwitter,
     isWebsite,
-    linkedIn,
+    linkedin,
     twitter,
     website
   }) => ({
@@ -41,7 +43,7 @@ const mapStateToProps = createSelector(
     isGithub,
     isTwitter,
     isWebsite,
-    linkedIn,
+    linkedin,
     show: (isLinkedIn || isGithub || isTwitter || isWebsite),
     twitter,
     website
@@ -55,19 +57,19 @@ function mapDispatchToProps() {
 function LinkedInIcon(linkedIn) {
   return (
     <a href={ linkedIn } rel='no-follow' target='_blank'>
-      <FontAwesome
-        icon={['fab', 'linkedin']}
+      <FontAwesomeIcon
+        icon={faLinkedin}
         size='2x'
       />
     </a>
   );
 }
 
-function githubIcon(ghURL) {
+function GithubIcon(ghURL) {
   return (
     <a href={ ghURL } rel='no-follow' target='_blank'>
-      <FontAwesome
-        icon={['fab', 'linkedin']}
+      <FontAwesomeIcon
+        icon={faGithub}
         size='2x'
       />
     </a>
@@ -77,8 +79,8 @@ function githubIcon(ghURL) {
 function WebsiteIcon(website) {
   return (
     <a href={ website } rel='no-follow' target='_blank'>
-      <FontAwesome
-        icon='link'
+      <FontAwesomeIcon
+        icon={faLink}
         size='2x'
       />
     </a>
@@ -88,8 +90,8 @@ function WebsiteIcon(website) {
 function TwitterIcon(handle) {
   return (
     <a href={ handle } rel='no-follow' target='_blank' >
-      <FontAwesome
-        icon={['fab', 'twitter']}
+      <FontAwesomeIcon
+        icon={faTwitter}
         size='2x'
       />
     </a>
@@ -103,7 +105,7 @@ function SocialIcons(props) {
     isGithub,
     isTwitter,
     isWebsite,
-    linkedIn,
+    linkedin,
     show,
     twitter,
     website
@@ -111,6 +113,7 @@ function SocialIcons(props) {
   if (!show) {
     return null;
   }
+
   return (
     <Row>
       <Col
@@ -119,10 +122,10 @@ function SocialIcons(props) {
         smOffset={ 3 }
         >
         {
-          isLinkedIn ? LinkedInIcon(linkedIn) : null
+          isLinkedIn ? LinkedInIcon(linkedin) : null
         }
         {
-          isGithub ? githubIcon(githubProfile) : null
+          isGithub ? GithubIcon(githubProfile) : null
         }
         {
           isWebsite ? WebsiteIcon(website) : null

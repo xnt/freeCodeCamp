@@ -3,7 +3,9 @@ import helmet from 'helmet';
 let trusted = [
   "'self'",
   'https://search.freecodecamp.org',
-  'https://*.algolianet.com'
+  'https://www.freecodecamp.rocks',
+  'https://api.freecodecamp.rocks',
+  'https://' + process.env.AUTH0_DOMAIN
 ];
 
 const host = process.env.HOST || 'localhost';
@@ -20,19 +22,22 @@ export default function csp() {
     directives: {
       defaultSrc: trusted.concat([
         'https://*.cloudflare.com',
-        '*.cloudflare.com',
-        'https://*.optimizely.com'
+        '*.cloudflare.com'
       ]),
       connectSrc: trusted.concat([
         'https://glitch.com',
         'https://*.glitch.com',
         'https://*.glitch.me',
-        'https://*.cloudflare.com'
+        'https://*.cloudflare.com',
+        'https://*.algolia.net'
       ]),
       scriptSrc: [
         "'unsafe-eval'",
         "'unsafe-inline'",
         '*.google-analytics.com',
+        'https://www.googletagmanager.com',
+        'https://www.googleadservices.com',
+        'https://googleads.g.doubleclick.net',
         '*.gstatic.com',
         'https://*.cloudflare.com',
         '*.cloudflare.com',
@@ -44,8 +49,7 @@ export default function csp() {
         '*.twimg.com',
         'https://*.twimg.com',
         '*.youtube.com',
-        '*.ytimg.com',
-        'https://*.optimizely.com'
+        '*.ytimg.com'
       ].concat(trusted),
       styleSrc: [
         "'unsafe-inline'",
@@ -55,7 +59,7 @@ export default function csp() {
         'https://*.bootstrapcdn.com',
         '*.cloudflare.com',
         'https://*.cloudflare.com',
-        'https://*.optimizely.com'
+        'https://use.fontawesome.com'
       ].concat(trusted),
       fontSrc: [
         '*.cloudflare.com',
@@ -64,7 +68,7 @@ export default function csp() {
         '*.googleapis.com',
         '*.gstatic.com',
         'https://*.bootstrapcdn.com',
-        'https://*.optimizely.com'
+        'https://use.fontawesome.com'
       ].concat(trusted),
       imgSrc: [
         // allow all input since we have user submitted images for

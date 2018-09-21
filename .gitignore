@@ -45,6 +45,8 @@ server/manifests/*
 !server/manifests/README.md
 server/resources/pathMigration.json
 
+public/js/client*
+public/js/news*
 public/js/main*
 public/js/commonFramework*
 public/js/sandbox*
@@ -58,3 +60,4 @@ public/css/main*
 webpack-bundle-stats.html
 server/rev-manifest.json
 google-credentials.json
+.vs/*
