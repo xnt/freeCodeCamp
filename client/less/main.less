@@ -56,6 +56,7 @@ pre.wrappable {
   font-size: .8em;
   line-height: 0;
   top: 50%;
+  transform: translateY(-45%);
   left: 15%;
 }
 
@@ -337,6 +338,9 @@ p.stats {
   max-width: 400px;
   margin: auto;
   margin-bottom: 10px;
+  @media (max-width: 450px) {
+    max-width: 90vw;
+  }
 }
 
 a {
@@ -1066,7 +1070,10 @@ and (max-width : 400px)  {
 // surrounding downstream import with &{}
 // creates locally scoped imports
 // and prevents vaiables from overwriting each other
-&{ @import "./code-mirror.less"; }
 &{ @import "./toastr.less"; }
 &{ @import "../../common/index.less"; }
 &{ @import "./userHome.less"; }
+
+.underlined-link {
+  text-decoration: underline;
+}

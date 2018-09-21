@@ -14,8 +14,8 @@ import { isEmail } from 'validator';
 import path from 'path';
 import loopback from 'loopback';
 import _ from 'lodash';
-import { ObjectId } from 'mongodb';
 import jwt from 'jsonwebtoken';
+import generate from 'nanoid/generate';
 
 import { fixCompletedChallengeItem } from '../utils';
 import { themes } from '../utils/themes';
@@ -34,6 +34,8 @@ import {
 
 const log = debugFactory('fcc:models:user');
 const BROWNIEPOINTS_TIMEOUT = [1, 'hour'];
+const nanoidCharSet =
+  '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 const createEmailError = redirectTo => wrapHandledError(
   new Error('email format is invalid'),
@@ -237,7 +239,7 @@ module.exports = function(User) {
           user.externalId = uuid();
         }
         if (!user.unsubscribeId) {
-          user.unsubscribeId = new ObjectId();
+          user.unsubscribeId = generate(nanoidCharSet, 20);
         }
 
         if (!user.progressTimestamps) {
@@ -245,7 +247,7 @@ module.exports = function(User) {
         }
 
         if (user.progressTimestamps.length === 0) {
-          user.progressTimestamps.push({ timestamp: Date.now() });
+          user.progressTimestamps.push(Date.now());
         }
         return Observable.fromPromise(User.doesExist(null, user.email))
           .do(exists => {
@@ -296,7 +298,7 @@ module.exports = function(User) {
         }
 
         if (!user.unsubscribeId) {
-          user.unsubscribeId = new ObjectId();
+          user.unsubscribeId = generate(nanoidCharSet, 20);
         }
       })
       .ignoreElements();
@@ -493,9 +495,7 @@ module.exports = function(User) {
     if (!username) {
       // Zalgo!!
       return nextTick(() => {
-        cb(new TypeError(
-            `username should be a string but got ${ username }`
-        ));
+        cb(null, {});
       });
     }
     return User.findOne({ where: { username } }, (err, user) => {
@@ -503,7 +503,7 @@ module.exports = function(User) {
         return cb(err);
       }
       if (!user || user.username !== username) {
-        return cb(new Error(`no user found for ${ username }`));
+        return cb(null, {});
       }
       const aboutUser = getAboutProfile(user);
       return cb(null, aboutUser);
@@ -852,7 +852,8 @@ module.exports = function(User) {
       points,
       portfolio,
       streak,
-      username
+      username,
+      yearsTopContributor
     } = user;
     const {
       isLocked = true,
@@ -870,6 +871,7 @@ module.exports = function(User) {
     if (isLocked) {
       return {
         isLocked,
+        profileUI,
         username
       };
     }
@@ -883,7 +885,8 @@ module.exports = function(User) {
       name: showName ? name : '',
       points: showPoints ? points : null,
       portfolio: showPortfolio ? portfolio : [],
-      streak: showHeatMap ? streak : {}
+      streak: showHeatMap ? streak : {},
+      yearsTopContributor: yearsTopContributor
     };
   }
 

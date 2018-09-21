@@ -1,6 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Col, Row } from 'react-bootstrap';
+import FontAwesomeIcon from '@fortawesome/react-fontawesome';
+import { faAward } from '@fortawesome/free-solid-svg-icons';
 
 import SocialIcons from '../../Profile/components/SocialIcons.jsx';
 
@@ -10,11 +12,25 @@ const propTypes = {
   name: PropTypes.string,
   picture: PropTypes.string,
   points: PropTypes.number,
-  username: PropTypes.string
+  username: PropTypes.string,
+  yearsTopContributor: PropTypes.array
 };
 
 function pluralise(word, condition) {
   return condition ? word + 's' : word;
+}
+function joinArray(array) {
+  return array.reduce((string, item, index, array) => {
+    if (string.length > 0) {
+      if (index === array.length - 1) {
+        return `${string} and ${item}`;
+      } else {
+        return `${string}, ${item}`;
+      }
+    } else {
+      return item;
+    }
+  });
 }
 
 function Camper({
@@ -23,7 +39,8 @@ function Camper({
   location,
   points,
   picture,
-  about
+  about,
+  yearsTopContributor
 }) {
 
   return (
@@ -48,6 +65,21 @@ function Camper({
             { `${points} ${pluralise('point', points !== 1)}` }
           </p>
         ) : null
+      }
+      { yearsTopContributor.filter(Boolean).length > 0 &&
+        (
+          <div>
+          <br/>
+          <p className='text-center yearsTopContributor'>
+            <FontAwesomeIcon
+              icon={faAward}
+            /> Top Contributor
+          </p>
+          <p className='text-center'>
+          { joinArray(yearsTopContributor) }
+          </p>
+          </div>
+        )
       }
       <br/>
     </div>
